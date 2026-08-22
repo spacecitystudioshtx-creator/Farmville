@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cliffwood Farm — Real-Yard Garden Manager</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌻</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="title-block">
+    <h1>🌻 Cliffwood Farm</h1>
+    <p class="address">11102 Cliffwood Dr, Houston, TX · USDA Zone 9b · Gulf Coast Prairie ecoregion</p>
+  </div>
+  <div id="weather-now" class="weather-now">
+    <span class="wx-loading">loading weather…</span>
+  </div>
+</header>
+
+<main class="layout">
+
+  <!-- LEFT: tools + plant catalog -->
+  <aside class="panel left-panel">
+    <section>
+      <h2>Tools</h2>
+      <div class="tool-grid" id="terrain-tools">
+        <button class="tool active" data-tool="select" title="Inspect a tile">🔍 Inspect</button>
+        <button class="tool" data-tool="water" title="Mark a plant as watered today">🚿 Water</button>
+        <button class="tool" data-tool="remove" title="Remove a plant">🧤 Dig up</button>
+        <button class="tool" data-tool="terrain:grass" title="Paint lawn">🟩 Lawn</button>
+        <button class="tool" data-tool="terrain:soil" title="Paint a garden bed">🟫 Bed</button>
+        <button class="tool" data-tool="terrain:path" title="Paint path / patio">⬜ Path</button>
+        <button class="tool" data-tool="terrain:driveway" title="Paint driveway">🚗 Drive</button>
+        <button class="tool" data-tool="terrain:house" title="Paint house footprint">🏠 House</button>
+      </div>
+      <p class="hint">Paint the map to match your real yard. Each tile ≈ 3 ft × 3 ft.</p>
+    </section>
+
+    <section>
+      <h2>Plant catalog</h2>
+      <div class="filter-row" id="catalog-filters">
+        <button class="filter active" data-filter="season">In season</button>
+        <button class="filter" data-filter="native">Natives</button>
+        <button class="filter" data-filter="edible">Edibles</button>
+        <button class="filter" data-filter="all">All</button>
+      </div>
+      <div id="plant-catalog" class="plant-catalog"></div>
+    </section>
+  </aside>
+
+  <!-- CENTER: the yard -->
+  <section class="canvas-wrap">
+    <canvas id="yard" width="960" height="624"></canvas>
+    <div class="canvas-footer">
+      <span id="map-status">Yard map: 120 ft × 78 ft (1 tile = 3 ft)</span>
+      <span class="canvas-actions">
+        <button id="btn-save" class="mini-btn">💾 Save</button>
+        <button id="btn-reset" class="mini-btn">↺ Reset layout</button>
+      </span>
+    </div>
+  </section>
+
+  <!-- RIGHT: weather, tasks, selection -->
+  <aside class="panel right-panel">
+    <section id="forecast-panel">
+      <h2>Weather — Willow Meadows</h2>
+      <div id="forecast" class="forecast"><span class="wx-loading">loading forecast…</span></div>
+    </section>
+
+    <section>
+      <h2>Garden tasks</h2>
+      <ul id="task-list" class="task-list"><li class="muted">Analyzing your garden…</li></ul>
+    </section>
+
+    <section>
+      <h2>Selected tile</h2>
+      <div id="tile-info" class="tile-info muted">Click a tile with the 🔍 tool.</div>
+    </section>
+  </aside>
+
+</main>
+
+<footer class="pagefoot">
+  Prototype · plant data: Gulf Coast / Houston (Harris Co.) native &amp; fall-garden lists · weather: Open-Meteo ·
+  location geocode is approximate · not affiliated with FarmVille/Zynga
+</footer>
+
+<script src="js/config.js"></script>
+<script src="js/plants.js"></script>
+<script src="js/sprites.js"></script>
+<script src="js/grid.js"></script>
+<script src="js/weather.js"></script>
+<script src="js/tasks.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
