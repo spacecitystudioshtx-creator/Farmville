@@ -1,8 +1,10 @@
-// App wiring: canvas rendering, tools, catalog, weather + tasks UI.
+// App wiring: canvas rendering, tools, catalog, weather + tasks UI,
+// import/export, sharing, and monetization slots.
 (function () {
   const Y = window.YARD;
   const S = window.SPRITES;
   const TILE = S.TILE;
+  const MON = (window.SITE.monetization || {});
 
   const canvas = document.getElementById('yard');
   const ctx = canvas.getContext('2d');
@@ -21,6 +23,16 @@
       for (let x = 0; x < Y.W; x++)
         S.drawTerrain(ctx, Y.terrainAt(x, y), x, y);
 
+    // picket fence around the lot (grass border tiles only, so drives/walks pass through)
+    for (let x = 0; x < Y.W; x++) {
+      if (Y.terrainAt(x, 0) === 'grass') S.drawFence(ctx, x, 0, false);
+      if (Y.terrainAt(x, Y.H - 1) === 'grass') S.drawFence(ctx, x, Y.H - 1, false);
+    }
+    for (let y = 1; y < Y.H - 1; y++) {
+      if (Y.terrainAt(0, y) === 'grass') S.drawFence(ctx, 0, y, true);
+      if (Y.terrainAt(Y.W - 1, y) === 'grass') S.drawFence(ctx, Y.W - 1, y, true);
+    }
+
     // plants: non-trees first, then trees (their canopies overlap neighbors)
     const plants = Y.allPlants().sort((a, b) => a.y - b.y);
     for (const p of plants) if (p.def.type !== 'tree') S.drawPlant(ctx, p.def, p.x, p.y, Y.growthStage(p.rec));
@@ -28,8 +40,8 @@
 
     if (ui.selected) {
       ctx.strokeStyle = '#ffe066';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(ui.selected.x * TILE + 1, ui.selected.y * TILE + 1, TILE - 2, TILE - 2);
+      ctx.lineWidth = 3;
+      ctx.strokeRect(ui.selected.x * TILE + 1.5, ui.selected.y * TILE + 1.5, TILE - 3, TILE - 3);
     }
   }
 
@@ -103,6 +115,46 @@
     if (!el.children.length) el.innerHTML = '<p class="muted">Nothing in this filter.</p>';
   }
 
+  // ---------- monetization ----------
+  function affiliateLinks(p) {
+    let html = '';
+    if (MON.amazonTag) {
+      const q = encodeURIComponent(p.name + (p.type === 'edible' ? ' seeds' : ' plant live'));
+      html += `<a class="mini-btn buy-btn" target="_blank" rel="noopener sponsored"
+        href="https://www.amazon.com/s?k=${q}&tag=${encodeURIComponent(MON.amazonTag)}">🛒 Buy ${p.type === 'edible' ? 'seeds' : 'plants'}</a>`;
+    }
+    html += `<a class="mini-btn" target="_blank" rel="noopener"
+      href="https://www.google.com/maps/search/${encodeURIComponent('native plant nursery near ' + window.SITE.address)}">📍 Find a nursery</a>`;
+    return `<div class="ti-actions">${html}</div>`;
+  }
+
+  function initMonetization() {
+    // tip jar
+    if (MON.supportUrl) {
+      document.getElementById('support-slot').innerHTML =
+        `<a class="mini-btn support-btn" target="_blank" rel="noopener" href="${MON.supportUrl}">☕ Support this project</a>`;
+    }
+    // ad slots
+    const side = document.getElementById('ad-side');
+    const bottom = document.getElementById('ad-bottom');
+    if (MON.adsenseClient) {
+      const s = document.createElement('script');
+      s.async = true;
+      s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + MON.adsenseClient;
+      s.crossOrigin = 'anonymous';
+      document.head.appendChild(s);
+      const ins = (slot, style) =>
+        `<ins class="adsbygoogle" style="${style}" data-ad-client="${MON.adsenseClient}"` +
+        (slot ? ` data-ad-slot="${slot}"` : '') + ` data-ad-format="auto" data-full-width-responsive="true"></ins>`;
+      side.innerHTML = ins(MON.adSlotSide, 'display:block;min-height:250px');
+      bottom.innerHTML = ins(MON.adSlotBottom, 'display:block;min-height:90px');
+      try { (window.adsbygoogle = window.adsbygoogle || []).push({}); (window.adsbygoogle).push({}); } catch (e) { /* blocked */ }
+    } else {
+      side.innerHTML = '<span class="ad-placeholder">ad space</span>';
+      bottom.innerHTML = '<span class="ad-placeholder">ad space — configure AdSense in js/config.js</span>';
+    }
+  }
+
   // ---------- tile info ----------
   function renderTileInfo() {
     const el = document.getElementById('tile-info');
@@ -135,7 +187,8 @@
       `<div class="ti-actions">` +
       `<button class="mini-btn" id="ti-water">🚿 Watered today</button>` +
       `<button class="mini-btn" id="ti-remove">🧤 Dig up</button>` +
-      `</div>`;
+      `</div>` +
+      affiliateLinks(p);
     document.getElementById('ti-water').onclick = () => { Y.waterPlant(x, y); persistAndRefresh(); };
     document.getElementById('ti-remove').onclick = () => { Y.removePlant(x, y); persistAndRefresh(); };
   }
@@ -193,6 +246,54 @@
       renderCatalog();
     }));
 
+  // ---------- share / import / export ----------
+  const modal = {
+    el: document.getElementById('modal'),
+    title: document.getElementById('modal-title'),
+    hint: document.getElementById('modal-hint'),
+    text: document.getElementById('modal-text'),
+    ok: document.getElementById('modal-ok'),
+    copy: document.getElementById('modal-copy'),
+    result: document.getElementById('modal-result'),
+    mode: 'import',
+    open(mode) {
+      this.mode = mode;
+      this.result.textContent = '';
+      if (mode === 'import') {
+        this.title.textContent = 'Import garden';
+        this.hint.innerHTML = 'Paste garden JSON — either an app export, or the layout Claude produced from the <a href="GARDEN_INTERVIEW.md" target="_blank">garden interview</a>.';
+        this.text.value = '';
+        this.ok.style.display = '';
+      } else {
+        this.title.textContent = 'Export garden';
+        this.hint.textContent = 'Copy this JSON to back up your garden or move it to another browser.';
+        this.text.value = window.IMPORTER.exportText();
+        this.ok.style.display = 'none';
+      }
+      this.el.classList.remove('hidden');
+    },
+    close() { this.el.classList.add('hidden'); },
+  };
+  document.getElementById('btn-import').addEventListener('click', () => modal.open('import'));
+  document.getElementById('btn-export').addEventListener('click', () => modal.open('export'));
+  document.getElementById('modal-close').addEventListener('click', () => modal.close());
+  document.getElementById('modal-copy').addEventListener('click', () => {
+    navigator.clipboard && navigator.clipboard.writeText(modal.text.value)
+      .then(() => { modal.result.textContent = 'Copied ✅'; }, () => { modal.result.textContent = 'Copy blocked — select the text manually.'; });
+  });
+  modal.ok.addEventListener('click', () => {
+    const res = window.IMPORTER.importText(modal.text.value);
+    modal.result.textContent = res.message;
+    if (res.ok) { persistAndRefresh(); setTimeout(() => modal.close(), 900); }
+  });
+
+  document.getElementById('btn-share').addEventListener('click', () => {
+    const a = document.createElement('a');
+    a.download = 'my-yard-cliffwood-farm.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  });
+
   document.getElementById('btn-save').addEventListener('click', () => {
     const ok = Y.save();
     document.getElementById('map-status').textContent = ok ? 'Saved ✅' : 'Save failed (storage blocked)';
@@ -217,6 +318,7 @@
   renderCatalog();
   renderTasks();
   renderTileInfo();
+  initMonetization();
 
   window.WEATHER.fetchWeather().then(w => {
     ui.weather = w;

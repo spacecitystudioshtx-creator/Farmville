@@ -3,71 +3,99 @@
 A FarmVille-style garden manager for a **real yard** — prototyped on 11102 Cliffwood Dr,
 Houston, TX (USDA zone 9b, Gulf Coast Prairies & Marshes ecoregion).
 
-Instead of a fictional farm, you paint an 8-bit map of your actual lot, plant real
-Gulf Coast natives and Harris County fall-garden vegetables on it, and the app tells
-you what to plant this month, what needs water (based on actual rainfall from
-Open-Meteo), and what seasonal chores are due.
+Instead of a fictional farm, you paint an 8-bit map of your actual lot (or let
+[Claude interview you](GARDEN_INTERVIEW.md) and import the result), plant real Gulf
+Coast natives and Harris County vegetables on it, and the app tells you what to
+plant this month, what needs water (based on actual rainfall from Open-Meteo),
+and what seasonal chores are due.
 
 ## Run it
 
-No build step — it's plain HTML/CSS/JS:
+No build step — plain HTML/CSS/JS:
 
 ```bash
-cd Farmville
-python3 -m http.server 8000
-# open http://localhost:8000
+python3 -m http.server 8000   # then open http://localhost:8000
 ```
 
-Opening `index.html` directly from disk also works in most browsers.
+## Deploy it (free)
 
-## What works in this prototype
+A GitHub Pages workflow is included (`.github/workflows/pages.yml`). One-time setup:
+repo **Settings → Pages → Source: "GitHub Actions"**, then push (or run the workflow
+manually). The site appears at `https://<owner>.github.io/Farmville/`.
 
-- **8-bit yard map** of a Willow Meadows-style lot (1 tile = 3 ft), pre-seeded with a
-  plausible house/driveway/bed layout you can repaint to match reality (lawn, beds,
-  paths, driveway, house). Trees, shrubs, flowers, grasses, vines, groundcovers and
-  vegetables all have procedural pixel sprites with growth stages tied to real
-  elapsed time since you planted them — and bloom sprites in their real bloom months.
-- **Region-scoped plant catalog**: ~25 Gulf Coast natives + Harris County fall/spring
-  vegetables, each with real planting windows, sun/water needs, spacing, and notes.
-  The "In season" tab shows only what can go in the ground this month.
-- **Live weather** for the property (Open-Meteo, keyless): current conditions, 7-day
-  forecast, and past-7-day rainfall.
-- **Task engine**: frost and extreme-heat alerts from the forecast, deep-water
-  reminders when weekly rainfall is under ~1", per-plant watering reminders (new
-  plantings every 2–3 days; established plants by their drought tolerance — skipped
-  when rain has it covered), what-to-plant-now counts, and Houston monthly chores.
-- **Watering log**: mark tiles watered with the 🚿 tool; reminders use your log plus
-  actual rainfall.
-- **Persistence** via localStorage (auto-saves on every change).
+For ad revenue you'll want a custom domain (~$10/yr) pointed at Pages — see below.
 
-## Deliberate prototype shortcuts
+## 💰 Getting paid
 
-- **No auto-map from satellite imagery.** Google's ToS forbids tracing derivative
-  maps from their imagery and auto-segmentation is a CV project; hand-painting the
-  yard is faster, more accurate, and doubles as onboarding. A licensed imagery
-  reference layer (e.g. public-domain NAIP) is a later milestone.
-- **Geocode is hardcoded** in `js/config.js` (approximate street-level coords for the
-  weather query). Multi-address support means adding a geocoding step + per-user storage.
-- **Plant data is a curated starter set**, not a full database. Sources to grow it:
-  USDA PLANTS, Native Plant Society of Texas (Houston chapter) lists, Harris County
-  AgriLife planting calendars.
+All monetization is configured in **`js/config.js` → `monetization`** and is off
+until you paste your IDs. In order of fastest-to-first-dollar:
 
-## Roadmap ideas
+1. **Tip jar (instant).** Create a [Buy Me a Coffee](https://buymeacoffee.com) or
+   [Ko-fi](https://ko-fi.com) page (or a Stripe Payment Link) and set `supportUrl`.
+   A "☕ Support this project" button appears in the header.
+2. **Amazon Associates (days).** Sign up at
+   [affiliate-program.amazon.com](https://affiliate-program.amazon.com), set
+   `amazonTag` (e.g. `cliffwoodfarm-20`). Every plant card grows a "🛒 Buy
+   seeds/plants" button with your tag. Gardening shoppers coming off a "plant
+   this now" recommendation are high-intent — this is the app's natural revenue
+   engine. Note: Amazon requires ~3 qualified sales in the first 180 days to
+   keep the account, and you must disclose affiliate links (the footer does).
+   Later, add higher-commission gardening programs (Botanical Interests, Nature
+   Hills, True Leaf Market via ShareASale/Impact) using the same button.
+3. **Google AdSense (weeks).** Needs a custom domain (approval on bare
+   `*.github.io` subdomains is unreliable) and a content review. Once approved,
+   set `adsenseClient` (+ optional slot IDs); two responsive units render — a
+   sidebar rectangle and an under-map leaderboard. Until then the slots show
+   quiet placeholders.
+4. **Premium tier (later).** Multiple properties, e-mail frost/watering alerts,
+   printable planting calendar. Needs accounts + Stripe + a small backend — on
+   the roadmap, not in this static prototype.
 
-1. Address input → geocode → auto zone/ecoregion lookup, per-user gardens (needs a backend).
-2. Affiliate links to native-plant nurseries from plant detail cards (better revenue than display ads).
-3. Email/push notifications for frost alerts and watering days.
-4. Photo journal per bed; harvest logging for edibles.
-5. Shareable PNG export of your pixel yard (the growth-marketing hook).
+## What the app does
+
+- **8-bit yard map** (1 tile = 3 ft) with neighbor-aware tiles: timber-edged
+  beds, flagstone paths, shingled roof with ridge caps, front walls with
+  windows and a door where the walk arrives, a picket fence around the lot,
+  drop shadows under every plant, and mow-stripes on the lawn. All sprites are
+  procedural; the renderer lives in `js/sprites.js`, so a drawn tileset
+  (Kenney / Sprout Lands style) can replace it without touching game logic.
+- **Growth simulation on real time**: sprites advance sprout → establishing →
+  established using actual days since planting, and show bloom sprites in each
+  species' real bloom months.
+- **Region-scoped catalog**: ~25 Gulf Coast natives + the Harris County
+  fall/spring vegetable calendar, with real planting windows, sun/water needs,
+  spacing, and local notes.
+- **Live weather** (Open-Meteo, keyless): current conditions, 7-day forecast,
+  past-7-day rainfall.
+- **Task engine**: frost & extreme-heat alerts, rainfall-aware watering
+  reminders with a per-tile watering log, "plant now" counts, Houston monthly
+  chores.
+- **Claude onboarding**: [GARDEN_INTERVIEW.md](GARDEN_INTERVIEW.md) contains a
+  prompt that interviews you about your real yard and emits importable JSON —
+  no manual painting needed.
+- **Import / Export / Share**: JSON backup and restore, one-click PNG export of
+  your pixel yard (the social growth hook).
+- **Persistence** via localStorage.
 
 ## Files
 
-- `js/config.js` — property config (address, coords, zone, grid size)
+- `js/config.js` — property config + monetization switches
 - `js/plants.js` — plant database (Gulf Coast natives + Houston veggie calendar)
-- `js/sprites.js` — procedural 8-bit terrain + plant sprites
+- `js/sprites.js` — procedural 8-bit terrain + plant sprites (swap point for real art)
 - `js/grid.js` — yard model, starter layout, growth stages, localStorage
 - `js/weather.js` — Open-Meteo client
 - `js/tasks.js` — task engine (weather alerts, watering logic, monthly chores)
-- `js/main.js` — UI wiring (canvas, tools, catalog, panels)
+- `js/importer.js` — garden JSON import/export (incl. the Claude interview format)
+- `js/main.js` — UI wiring (canvas, tools, catalog, panels, monetization slots)
+- `GARDEN_INTERVIEW.md` — the Claude onboarding interview prompt
 
-*Prototype; not affiliated with FarmVille/Zynga.*
+## Roadmap
+
+1. Custom domain + AdSense approval; swap in higher-commission garden affiliates.
+2. Address input → geocode → auto zone/ecoregion; per-user gardens (small backend).
+3. Real pixel-art tileset (Aseprite/Piskel or a CC0 pack like Kenney's).
+4. E-mail/push frost and watering alerts (the retention loop).
+5. Photo journal per bed; harvest logging; shareable garden pages.
+
+*Prototype; not affiliated with FarmVille/Zynga. Some outbound links may be
+affiliate links.*

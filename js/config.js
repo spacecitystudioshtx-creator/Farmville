@@ -15,4 +15,24 @@ window.SITE = {
   tileFeet: 3,
 
   storageKey: 'cliffwood-farm-v1',
+
+  // ---- Monetization ----------------------------------------------------
+  // Everything below is OFF until you paste your own IDs. Signup order that
+  // pays fastest: supportUrl (instant) → amazonTag (days) → adsenseClient
+  // (needs a custom domain + approval). See README "Getting paid".
+  monetization: {
+    // Google AdSense: 'ca-pub-XXXXXXXXXXXXXXXX' once approved. Empty = ads off,
+    // slots show a quiet placeholder.
+    adsenseClient: '',
+    adSlotSide: '',     // AdSense slot id for the sidebar unit
+    adSlotBottom: '',   // AdSense slot id for the under-map unit
+
+    // Amazon Associates tracking tag, e.g. 'cliffwoodfarm-20'.
+    // Adds "Buy seeds/plants" buttons to every plant card.
+    amazonTag: '',
+
+    // Instant tip jar: Buy Me a Coffee / Ko-fi / Stripe Payment Link.
+    // e.g. 'https://buymeacoffee.com/yourname'
+    supportUrl: '',
+  },
 };

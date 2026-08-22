@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cliffwood Farm — Real-Yard Garden Manager</title>
+<meta name="description" content="FarmVille for your real yard: paint an 8-bit map of your actual garden, plant Gulf Coast natives and seasonal vegetables, and get live watering, frost, and planting advice.">
+<meta property="og:title" content="Cliffwood Farm — garden management, but it's your actual yard">
+<meta property="og:description" content="Paint your real yard in 8-bit, plant real natives, get real watering and frost alerts. A garden manager that plays like a farm game.">
+<meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌻</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,8 +21,11 @@
     <h1>🌻 Cliffwood Farm</h1>
     <p class="address">11102 Cliffwood Dr, Houston, TX · USDA Zone 9b · Gulf Coast Prairie ecoregion</p>
   </div>
-  <div id="weather-now" class="weather-now">
-    <span class="wx-loading">loading weather…</span>
+  <div class="topbar-right">
+    <span id="support-slot"></span>
+    <div id="weather-now" class="weather-now">
+      <span class="wx-loading">loading weather…</span>
+    </div>
   </div>
 </header>
 
@@ -38,7 +45,8 @@
         <button class="tool" data-tool="terrain:driveway" title="Paint driveway">🚗 Drive</button>
         <button class="tool" data-tool="terrain:house" title="Paint house footprint">🏠 House</button>
       </div>
-      <p class="hint">Paint the map to match your real yard. Each tile ≈ 3 ft × 3 ft.</p>
+      <p class="hint">Paint the map to match your real yard. Each tile ≈ 3 ft × 3 ft.
+      Or skip the manual work: <a href="GARDEN_INTERVIEW.md" target="_blank">let Claude interview you</a> and import the result.</p>
     </section>
 
     <section>
@@ -54,15 +62,21 @@
   </aside>
 
   <!-- CENTER: the yard -->
-  <section class="canvas-wrap">
-    <canvas id="yard" width="960" height="624"></canvas>
-    <div class="canvas-footer">
-      <span id="map-status">Yard map: 120 ft × 78 ft (1 tile = 3 ft)</span>
-      <span class="canvas-actions">
-        <button id="btn-save" class="mini-btn">💾 Save</button>
-        <button id="btn-reset" class="mini-btn">↺ Reset layout</button>
-      </span>
+  <section class="canvas-col">
+    <div class="canvas-wrap">
+      <canvas id="yard" width="1280" height="832"></canvas>
+      <div class="canvas-footer">
+        <span id="map-status">Yard map: 120 ft × 78 ft (1 tile = 3 ft)</span>
+        <span class="canvas-actions">
+          <button id="btn-share" class="mini-btn" title="Download your yard as a PNG">📸 Share PNG</button>
+          <button id="btn-import" class="mini-btn" title="Import a garden JSON (e.g. from the Claude interview)">⬆ Import</button>
+          <button id="btn-export" class="mini-btn" title="Export your garden as JSON">⬇ Export</button>
+          <button id="btn-save" class="mini-btn">💾 Save</button>
+          <button id="btn-reset" class="mini-btn">↺ Reset layout</button>
+        </span>
+      </div>
     </div>
+    <div id="ad-bottom" class="ad-slot ad-bottom" aria-label="advertisement"></div>
   </section>
 
   <!-- RIGHT: weather, tasks, selection -->
@@ -81,13 +95,31 @@
       <h2>Selected tile</h2>
       <div id="tile-info" class="tile-info muted">Click a tile with the 🔍 tool.</div>
     </section>
+
+    <div id="ad-side" class="ad-slot ad-side" aria-label="advertisement"></div>
   </aside>
 
 </main>
 
+<!-- Import / Export modal -->
+<div id="modal" class="modal hidden">
+  <div class="modal-box">
+    <h3 id="modal-title">Import garden</h3>
+    <p id="modal-hint" class="hint"></p>
+    <textarea id="modal-text" spellcheck="false" placeholder='Paste garden JSON here…'></textarea>
+    <div class="modal-actions">
+      <button id="modal-ok" class="mini-btn">Apply</button>
+      <button id="modal-copy" class="mini-btn">Copy</button>
+      <button id="modal-close" class="mini-btn">Close</button>
+    </div>
+    <p id="modal-result" class="hint"></p>
+  </div>
+</div>
+
 <footer class="pagefoot">
   Prototype · plant data: Gulf Coast / Houston (Harris Co.) native &amp; fall-garden lists · weather: Open-Meteo ·
-  location geocode is approximate · not affiliated with FarmVille/Zynga
+  location geocode is approximate · not affiliated with FarmVille/Zynga ·
+  some outbound links may be affiliate links that support this site
 </footer>
 
 <script src="js/config.js"></script>
@@ -96,6 +128,7 @@
 <script src="js/grid.js"></script>
 <script src="js/weather.js"></script>
 <script src="js/tasks.js"></script>
+<script src="js/importer.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

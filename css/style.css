@@ -92,6 +92,7 @@ body {
 .tool.active { background: var(--accent-dark); border-color: var(--accent); }
 
 .hint { color: var(--ink-dim); font-size: 11px; margin-top: 8px; }
+a { color: var(--accent); }
 
 .filter-row { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
 .filter {
@@ -218,6 +219,63 @@ body {
 .tile-info dt { color: var(--ink-dim); }
 .tile-info .ti-actions { margin-top: 10px; display: flex; gap: 6px; }
 .muted { color: var(--ink-dim); }
+
+.topbar-right { display: flex; align-items: center; gap: 14px; }
+.support-btn { background: var(--accent-dark); border-color: var(--accent); }
+
+.canvas-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+
+.ad-slot {
+  background: var(--panel);
+  border: 2px dashed var(--panel-edge);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.ad-bottom { min-height: 90px; }
+.ad-side { min-height: 250px; }
+.ad-placeholder {
+  color: #4c5c44;
+  font-family: var(--pixel);
+  font-size: 9px;
+  text-transform: uppercase;
+  padding: 8px;
+  text-align: center;
+}
+
+.buy-btn { background: #7a5a1e; border-color: #b3702a; }
+.ti-actions a.mini-btn { text-decoration: none; display: inline-block; }
+
+.modal {
+  position: fixed; inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 50;
+}
+.modal.hidden { display: none; }
+.modal-box {
+  background: var(--panel);
+  border: 2px solid var(--accent-dark);
+  border-radius: 10px;
+  padding: 16px;
+  width: min(640px, 92vw);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.modal-box h3 { font-family: var(--pixel); font-size: 11px; color: var(--accent); }
+.modal-box textarea {
+  width: 100%; height: 240px;
+  background: #17200f;
+  color: var(--ink);
+  border: 1px solid var(--panel-edge);
+  border-radius: 6px;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  padding: 8px;
+  resize: vertical;
+}
+.modal-actions { display: flex; gap: 8px; }
 
 .pagefoot {
   padding: 12px 20px 20px;
