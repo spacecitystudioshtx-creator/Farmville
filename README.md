@@ -51,6 +51,57 @@ until you paste your IDs. In order of fastest-to-first-dollar:
    printable planting calendar. Needs accounts + Stripe + a small backend — on
    the roadmap, not in this static prototype.
 
+## 📣 Marketing plan
+
+Organic-first, seasonal, one channel at a time. Gardening is a compounding-channel
+category (SEO, Pinterest, email) — spikes are for launch week, compounding is the
+business. Founder time budget: **5–8 hrs/week**. Cash budget: **$12 minimum**
+(domain), **~$460 recommended** across 6 months.
+
+### Phase 1 — Launch moments (weeks 1–2 · $0 · ~10 hrs)
+
+| Play | Why it's current best practice |
+|---|---|
+| **Show HN + Product Hunt + r/SideProject**, same week | "I turned my real yard into FarmVille" is a strong indie-launch hook; the Claude-interview onboarding is the demo moment. Expect a 2–5k-visit spike and, more importantly, the backlinks that seed SEO. |
+| **Value-first Reddit** in r/NativePlantGardening, r/NoLawns, r/vegetablegardening, r/Houston | Post the pixel yard + what you're planting this fall, not a pitch. These communities are the exact ICP and reward genuine builders. |
+| **Build-in-public thread** (X/Threads) | Compounds credibility; costs nothing; feeds later creator outreach. |
+
+### Phase 2 — Compounding channels (weeks 3–12 · ~$150 optional · 5 hrs/wk)
+
+| Channel | Cadence | Notes |
+|---|---|---|
+| **Programmatic SEO + AEO** | 2–3 pages/wk | Zone × month pages ("What to plant in October, zone 9b") with FAQ schema and direct answers — written to be *cited by AI search* (Google AI Overviews, ChatGPT, Perplexity) as well as ranked. AEO is the single biggest 2026 shift: answer-shaped content wins twice. Each page CTAs into the app. |
+| **Pinterest** | 3–5 pins/wk | Gardening is a top-Pinterest vertical and pins compound for 6–12 months (vs hours on X). Vertical pins per plant/month from the app's own art. Optional $100 promoted-pin test in week 6. |
+| **Short-form video** | 2/wk | The proven format: split-screen **pixel garden ↔ real garden** timelapse, 15–30s, native captions, posted to TikTok + Reels + Shorts simultaneously (CapCut, free). Cozy-game aesthetic × garden-transformation is two large communities overlapping. |
+| **Email list** | weekly | "Frost alert + what to plant this week in 9b." Signup = the retention loop AND the owned channel. Buttondown/MailerLite free tier. Optional $50 Meta retargeting test. |
+
+### Phase 3 — Multipliers (months 3–6 · ~$300 optional)
+
+- **Creator seeding:** gift 15–20 garden-tok / cozy-gaming micro-creators (5–50k
+  followers) a custom pixel render of *their* yard. Micro-creator gifting beats paid
+  ads on CAC in almost every 2025–26 benchmark; budget is postage + time.
+- **Local Houston:** talk at a Native Plant Society of Texas chapter meeting; QR
+  cards at 2–3 native nurseries (they hand cards to buyers, the app sends them
+  buyers back — symmetric value).
+- **Catalog expansion** beyond Houston → unlocks national SEO pages (the ceiling-raiser).
+
+### Expected market penetration (honest numbers)
+
+Serviceable market: ~1.2M gardening households in Houston metro; realistic early-adopter
+pool (native-plant-curious, app-open) ~100k. US TAM ~80M gardening households.
+
+| Milestone | Traffic | Active gardens | Penetration |
+|---|---|---|---|
+| Day 30 | 3–6k visits (launch spike + tail) | 150–400 | 0.2–0.4% of Houston early adopters |
+| Day 90 | 5–10k/mo (compounding starts) | 600–1,500 | ~1% of Houston early adopters |
+| Month 6 | 10–25k/mo | 2–5k | 2–5% Houston EA; revenue ≈ $150–600/mo |
+| Month 12 | 30–80k/mo (requires national catalog) | 8–20k | still <0.1% of US TAM — normal and fine for year 1 |
+
+Weekly KPI review: visits → import-completion rate → D7 return → affiliate CTR →
+email signups. Rule: kill any channel that doesn't move after 4 honest weeks;
+double down on the one that does. Time the big pushes to the two gardening surges
+(Sep–Oct fall planting, Feb–Apr spring).
+
 ## What the app does
 
 - **8-bit yard map** (1 tile = 3 ft) with neighbor-aware tiles: timber-edged
