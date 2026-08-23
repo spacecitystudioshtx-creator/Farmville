@@ -313,8 +313,23 @@
 
   window.SPRITES = {
     TILE,
-    drawTerrain(ctx, type, x, y) { (TERRAIN[type] || TERRAIN.grass)(ctx, x, y); },
-    drawPlant(ctx, plantDef, x, y, stage) { PLANT_PAINTERS[plantDef.type](ctx, x, y, plantDef, stage); },
+    drawTerrain(ctx, type, x, y) {
+      const img = window.ART && window.ART.tile(type);
+      if (img) { ctx.drawImage(img, x * TILE, y * TILE, TILE, TILE); return; }
+      (TERRAIN[type] || TERRAIN.grass)(ctx, x, y);
+    },
+    drawPlant(ctx, plantDef, x, y, stage) {
+      const img = window.ART && window.ART.plant(plantDef.id, stage);
+      if (img) {
+        if (plantDef.type === 'tree' && stage >= 2) {
+          ctx.drawImage(img, (x - 1) * TILE, (y - 1.4) * TILE, TILE * 3, TILE * 3); // canopy overflow
+        } else {
+          ctx.drawImage(img, x * TILE, y * TILE, TILE, TILE);
+        }
+        return;
+      }
+      PLANT_PAINTERS[plantDef.type](ctx, x, y, plantDef, stage);
+    },
     drawFence,
     // small canvas swatch for the catalog list
     makeSwatch(plantDef) {

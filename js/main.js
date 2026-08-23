@@ -319,6 +319,12 @@
   renderTasks();
   renderTileInfo();
   initMonetization();
+  window.ART.init(() => { render(); renderCatalog(); }); // re-render once image art loads
+
+  // PWA: installable + offline app shell (no-op on file:// or unsupported browsers)
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    navigator.serviceWorker.register('sw.js').catch(() => { /* fine without it */ });
+  }
 
   window.WEATHER.fetchWeather().then(w => {
     ui.weather = w;

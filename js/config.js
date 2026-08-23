@@ -1,6 +1,8 @@
 // Site configuration for the prototype property.
 // Geocode is approximate (street-level); good enough for weather + zone lookups.
 window.SITE = {
+  brand: 'GardenStar',
+  tagline: 'The farm game that grows your real garden',
   address: '11102 Cliffwood Dr, Houston, TX 77035',
   lat: 29.6524,
   lon: -95.4479,

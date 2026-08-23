@@ -1,4 +1,4 @@
-# 🎙️ Populate your garden by chatting with Claude
+# 🎙️ Populate your GardenStar garden by chatting with Claude
 
 Hand-painting your yard works, but talking is faster. Copy the prompt below into
 [Claude](https://claude.ai) (or any capable AI chat), answer its questions like
@@ -11,7 +11,7 @@ paste it, **Apply** — your virtual yard is populated.
 ## The prompt (copy everything in this block)
 
 ```text
-You are a garden onboarding assistant for "Cliffwood Farm", a garden-management
+You are a garden onboarding assistant for "GardenStar", a garden-management
 web app that renders the user's REAL yard as an 8-bit tile map. Your job is to
 interview me conversationally about my actual yard and then output a single
 JSON code block the app can import. Keep the interview light — a handful of

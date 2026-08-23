@@ -1,6 +1,6 @@
-# 🌻 Cliffwood Farm
+# 🌻 GardenStar
 
-A FarmVille-style garden manager for a **real yard** — prototyped on 11102 Cliffwood Dr,
+**The farm game that grows your real garden** — a FarmVille-style manager for a **real yard** — prototyped on 11102 Cliffwood Dr,
 Houston, TX (USDA zone 9b, Gulf Coast Prairies & Marshes ecoregion).
 
 Instead of a fictional farm, you paint an 8-bit map of your actual lot (or let
@@ -108,8 +108,11 @@ double down on the one that does. Time the big pushes to the two gardening surge
   beds, flagstone paths, shingled roof with ridge caps, front walls with
   windows and a door where the walk arrives, a picket fence around the lot,
   drop shadows under every plant, and mow-stripes on the lawn. All sprites are
-  procedural; the renderer lives in `js/sprites.js`, so a drawn tileset
-  (Kenney / Sprout Lands style) can replace it without touching game logic.
+  procedural by default; drop image art into `assets/art/` (PixelLab exports,
+  Sprout Lands, commissioned tiles) and it's used automatically with per-asset
+  procedural fallback — see [ART_PIPELINE.md](ART_PIPELINE.md).
+- **Installable PWA**: manifest + service worker give "Add to Home Screen",
+  offline app shell, and a web-push-ready foundation for frost alerts.
 - **Growth simulation on real time**: sprites advance sprout → establishing →
   established using actual days since planting, and show bloom sprites in each
   species' real bloom months.
