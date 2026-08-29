@@ -1,0 +1,34 @@
+{
+  "tiles": [
+    "grass",
+    "soil",
+    "path",
+    "driveway"
+  ],
+  "plants": {
+    "turkscap": [
+      2,
+      3
+    ],
+    "gcmuhly": [
+      2,
+      3
+    ],
+    "falltomato": [
+      2,
+      3
+    ],
+    "autumnsage": [
+      3
+    ],
+    "yaupon": [
+      2
+    ],
+    "liveoak": [
+      2
+    ],
+    "pecan": [
+      2
+    ]
+  }
+}
