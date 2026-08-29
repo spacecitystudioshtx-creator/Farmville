@@ -1,4 +1,27 @@
-# 🎨 GardenStar art pipeline (PixelLab → app)
+# 🎨 GardenStar art pipeline
+
+## Sprout Lands (the chosen direction)
+
+`tools/slice_sprout.py` slices the Sprout Lands pack straight into the app's
+format — terrain, fences, a tile-built house (roof/wall/window/door), and
+**facsimile plant sprites**: a handful of generic pack sprites (flower by
+bloom color, bush, grass clump, crop with growth stages, tree) cover the whole
+39-plant catalog via the fallback chain in `js/art.js`. Run:
+
+```bash
+python3 tools/slice_sprout.py --pack "/path/to/Sprout Lands - Sprites - Basic pack" --out assets/art
+```
+
+⚠️ **License**: the free Basic pack is **non-commercial only** and may not be
+redistributed. GardenStar is a commercial project, so before shipping these
+assets: buy the premium pack / get a commercial license from Cup Nooble
+(itch.io or Discord `cup_nooble` — the read_me invites custom licensing).
+The required credit line is written into `manifest.json` and rendered in the
+app footer automatically.
+
+---
+
+## Alternative: PixelLab generation (species-specific art)
 
 The engine now supports **image art with per-asset fallback**: any sprite you
 provide is drawn instead of the built-in procedural art; anything missing keeps

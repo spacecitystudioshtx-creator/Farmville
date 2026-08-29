@@ -319,7 +319,11 @@
   renderTasks();
   renderTileInfo();
   initMonetization();
-  window.ART.init(() => { render(); renderCatalog(); }); // re-render once image art loads
+  window.ART.init(() => {
+    render(); renderCatalog();
+    const credit = window.ART.creditLine();
+    if (credit) document.querySelector('.pagefoot').append(' · ' + credit);
+  });
 
   // PWA: installable + offline app shell (no-op on file:// or unsupported browsers)
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {

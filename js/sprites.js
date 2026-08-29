@@ -80,6 +80,21 @@
       }
     },
     house(ctx, x, y) {
+      // image-based house when pack art is loaded (roof + wall/window/door)
+      const A = window.ART;
+      if (A && A.get && A.get('house/roof')) {
+        const below = at(x, y + 1);
+        if (below !== 'house') {
+          let img = A.get('house/wall');
+          if (below === 'path' && A.get('house/door')) img = A.get('house/door');
+          else if (hash(x, y, 8) < 0.55 && A.get('house/window')) img = A.get('house/window');
+          if (img) { ctx.drawImage(img, x * TILE, y * TILE, TILE, TILE); return; }
+        } else {
+          const img = at(x, y - 1) !== 'house' ? (A.get('house/roof_top') || A.get('house/roof')) : A.get('house/roof');
+          ctx.drawImage(img, x * TILE, y * TILE, TILE, TILE);
+          return;
+        }
+      }
       const wallBelow = at(x, y + 1) !== 'house';
       const roofRows = wallBelow ? 9 : 16;
       // shingles
@@ -112,6 +127,8 @@
 
   // picket fence overlay for the lot border (drawn on grass border tiles)
   function drawFence(ctx, x, y, vertical) {
+    const img = window.ART && window.ART.get && window.ART.get(vertical ? 'fence_v' : 'fence_h');
+    if (img) { ctx.drawImage(img, x * TILE, y * TILE, TILE, TILE); return; }
     const c = '#ece4cf', s = '#b6ab8e';
     if (!vertical) {
       px(ctx, x, y, 0, 8, 16, 2, c); px(ctx, x, y, 0, 10, 16, 1, s);   // rail
@@ -321,11 +338,10 @@
     drawPlant(ctx, plantDef, x, y, stage) {
       const img = window.ART && window.ART.plant(plantDef.id, stage);
       if (img) {
-        if (plantDef.type === 'tree' && stage >= 2) {
-          ctx.drawImage(img, (x - 1) * TILE, (y - 1.4) * TILE, TILE * 3, TILE * 3); // canopy overflow
-        } else {
-          ctx.drawImage(img, x * TILE, y * TILE, TILE, TILE);
-        }
+        // draw at 2x native pixel density, anchored bottom-center of the tile,
+        // so tall/wide sprites (trees, sunflowers) rise out of their tile
+        const w = img.width * 2, h = img.height * 2;
+        ctx.drawImage(img, x * TILE + TILE / 2 - w / 2, (y + 1) * TILE - h + 2, w, h);
         return;
       }
       PLANT_PAINTERS[plantDef.type](ctx, x, y, plantDef, stage);
