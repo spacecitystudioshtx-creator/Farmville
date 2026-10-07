@@ -201,13 +201,14 @@
     renderCatalog();
   }
 
-  function tileFromEvent(ev) {
+  function tileFromPoint(clientX, clientY) {
     const r = canvas.getBoundingClientRect();
-    const x = Math.floor((ev.clientX - r.left) / r.width * Y.W);
-    const y = Math.floor((ev.clientY - r.top) / r.height * Y.H);
+    const x = Math.floor((clientX - r.left) / r.width * Y.W);
+    const y = Math.floor((clientY - r.top) / r.height * Y.H);
     if (x < 0 || y < 0 || x >= Y.W || y >= Y.H) return null;
     return { x, y };
   }
+  function tileFromEvent(ev) { return tileFromPoint(ev.clientX, ev.clientY); }
 
   function applyTool(t) {
     if (!t) return;
@@ -234,6 +235,22 @@
     if (painting && (ui.tool.startsWith('terrain:') || ui.tool === 'remove')) applyTool(tileFromEvent(ev));
   });
   window.addEventListener('mouseup', () => { painting = false; });
+
+  // touch: single finger paints/plants; two fingers are left to the browser (scroll/zoom)
+  canvas.addEventListener('touchstart', ev => {
+    if (ev.touches.length !== 1) { painting = false; return; }
+    ev.preventDefault();
+    painting = true;
+    applyTool(tileFromPoint(ev.touches[0].clientX, ev.touches[0].clientY));
+  }, { passive: false });
+  canvas.addEventListener('touchmove', ev => {
+    if (!painting || ev.touches.length !== 1) return;
+    ev.preventDefault();
+    if (ui.tool.startsWith('terrain:') || ui.tool === 'remove')
+      applyTool(tileFromPoint(ev.touches[0].clientX, ev.touches[0].clientY));
+  }, { passive: false });
+  canvas.addEventListener('touchend', () => { painting = false; });
+  canvas.addEventListener('touchcancel', () => { painting = false; });
 
   document.querySelectorAll('#terrain-tools .tool').forEach(b =>
     b.addEventListener('click', () => setTool(b.dataset.tool)));

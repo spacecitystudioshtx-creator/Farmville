@@ -58,7 +58,7 @@ body {
 }
 @media (max-width: 1100px) {
   .layout { grid-template-columns: 1fr; }
-  .canvas-wrap { order: -1; }
+  .canvas-col { order: -1; }
 }
 
 .panel {
