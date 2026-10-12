@@ -1,34 +1,1051 @@
 {
-  "tiles": [
-    "grass",
-    "soil",
-    "path",
-    "driveway"
+ "credit": "Art: LimeZu (limezu.itch.io)",
+ "plantScale": 2,
+ "atlas": "atlas.png",
+ "frames": {
+  "auto/driveway": [
+   305,
+   80,
+   48,
+   48
   ],
-  "plants": {
-    "turkscap": [
-      2,
-      3
-    ],
-    "gcmuhly": [
-      2,
-      3
-    ],
-    "falltomato": [
-      2,
-      3
-    ],
-    "autumnsage": [
-      3
-    ],
-    "yaupon": [
-      2
-    ],
-    "liveoak": [
-      2
-    ],
-    "pecan": [
-      2
-    ]
-  }
+  "auto/path": [
+   256,
+   80,
+   48,
+   48
+  ],
+  "auto/soil": [
+   207,
+   80,
+   48,
+   48
+  ],
+  "fence_h": [
+   170,
+   191,
+   16,
+   16
+  ],
+  "fence_v": [
+   187,
+   191,
+   16,
+   16
+  ],
+  "plants/aquaticmilkweed/0": [
+   204,
+   241,
+   16,
+   10
+  ],
+  "plants/aquaticmilkweed/1": [
+   391,
+   227,
+   16,
+   11
+  ],
+  "plants/aquaticmilkweed/2": [
+   119,
+   211,
+   16,
+   15
+  ],
+  "plants/aquaticmilkweed/3": [
+   136,
+   211,
+   16,
+   15
+  ],
+  "plants/autumnsage/0": [
+   102,
+   241,
+   16,
+   10
+  ],
+  "plants/autumnsage/1": [
+   289,
+   227,
+   16,
+   11
+  ],
+  "plants/autumnsage/2": [
+   425,
+   191,
+   16,
+   15
+  ],
+  "plants/autumnsage/3": [
+   442,
+   191,
+   16,
+   15
+  ],
+  "plants/basil/0": [
+   17,
+   253,
+   16,
+   9
+  ],
+  "plants/basil/1": [
+   272,
+   227,
+   16,
+   12
+  ],
+  "plants/basil/2": [
+   408,
+   211,
+   16,
+   14
+  ],
+  "plants/basil/3": [
+   425,
+   211,
+   16,
+   14
+  ],
+  "plants/beautyberry/0": [
+   221,
+   241,
+   16,
+   10
+  ],
+  "plants/beautyberry/1": [
+   323,
+   191,
+   16,
+   16
+  ],
+  "plants/beautyberry/2": [
+   17,
+   191,
+   16,
+   19
+  ],
+  "plants/beautyberry/3": [
+   34,
+   191,
+   16,
+   19
+  ],
+  "plants/blackeyedsusan/0": [
+   153,
+   241,
+   16,
+   10
+  ],
+  "plants/blackeyedsusan/1": [
+   340,
+   227,
+   16,
+   11
+  ],
+  "plants/blackeyedsusan/2": [
+   17,
+   211,
+   16,
+   15
+  ],
+  "plants/blackeyedsusan/3": [
+   34,
+   211,
+   16,
+   15
+  ],
+  "plants/broccoli/0": [
+   408,
+   241,
+   16,
+   10
+  ],
+  "plants/broccoli/1": [
+   459,
+   227,
+   16,
+   11
+  ],
+  "plants/broccoli/2": [
+   357,
+   211,
+   16,
+   14
+  ],
+  "plants/broccoli/3": [
+   374,
+   211,
+   16,
+   14
+  ],
+  "plants/bushbeans/0": [
+   150,
+   158,
+   16,
+   29
+  ],
+  "plants/bushbeans/1": [
+   167,
+   158,
+   16,
+   29
+  ],
+  "plants/bushbeans/2": [
+   184,
+   158,
+   16,
+   29
+  ],
+  "plants/bushbeans/3": [
+   201,
+   158,
+   16,
+   29
+  ],
+  "plants/buttonbush/0": [
+   255,
+   241,
+   16,
+   10
+  ],
+  "plants/buttonbush/1": [
+   357,
+   191,
+   16,
+   16
+  ],
+  "plants/buttonbush/2": [
+   85,
+   191,
+   16,
+   19
+  ],
+  "plants/buttonbush/3": [
+   102,
+   191,
+   16,
+   19
+  ],
+  "plants/cardinalflower/0": [
+   85,
+   241,
+   16,
+   10
+  ],
+  "plants/cardinalflower/1": [
+   0,
+   191,
+   16,
+   19
+  ],
+  "plants/cardinalflower/2": [
+   100,
+   158,
+   16,
+   31
+  ],
+  "plants/cardinalflower/3": [
+   0,
+   158,
+   16,
+   32
+  ],
+  "plants/carrot/0": [
+   221,
+   227,
+   16,
+   12
+  ],
+  "plants/carrot/1": [
+   493,
+   211,
+   16,
+   13
+  ],
+  "plants/carrot/2": [
+   0,
+   227,
+   16,
+   13
+  ],
+  "plants/carrot/3": [
+   255,
+   211,
+   16,
+   15
+  ],
+  "plants/cilantro/0": [
+   255,
+   227,
+   16,
+   12
+  ],
+  "plants/cilantro/1": [
+   34,
+   227,
+   16,
+   13
+  ],
+  "plants/cilantro/2": [
+   51,
+   227,
+   16,
+   13
+  ],
+  "plants/cilantro/3": [
+   68,
+   227,
+   16,
+   13
+  ],
+  "plants/coneflower/0": [
+   68,
+   241,
+   16,
+   10
+  ],
+  "plants/coneflower/1": [
+   490,
+   158,
+   16,
+   19
+  ],
+  "plants/coneflower/2": [
+   83,
+   158,
+   16,
+   31
+  ],
+  "plants/coneflower/3": [
+   487,
+   80,
+   16,
+   32
+  ],
+  "plants/coralhoneysuckle/0": [
+   286,
+   158,
+   16,
+   27
+  ],
+  "plants/coralhoneysuckle/1": [
+   303,
+   158,
+   16,
+   27
+  ],
+  "plants/coralhoneysuckle/2": [
+   218,
+   158,
+   16,
+   28
+  ],
+  "plants/coralhoneysuckle/3": [
+   235,
+   158,
+   16,
+   28
+  ],
+  "plants/cucumber/0": [
+   391,
+   241,
+   16,
+   10
+  ],
+  "plants/cucumber/1": [
+   102,
+   227,
+   16,
+   12
+  ],
+  "plants/cucumber/2": [
+   119,
+   227,
+   16,
+   12
+  ],
+  "plants/cucumber/3": [
+   405,
+   158,
+   16,
+   20
+  ],
+  "plants/falltomato/0": [
+   493,
+   241,
+   16,
+   9
+  ],
+  "plants/falltomato/1": [
+   374,
+   191,
+   16,
+   16
+  ],
+  "plants/falltomato/2": [
+   354,
+   158,
+   16,
+   23
+  ],
+  "plants/falltomato/3": [
+   371,
+   158,
+   16,
+   23
+  ],
+  "plants/flameacanthus/0": [
+   51,
+   241,
+   16,
+   10
+  ],
+  "plants/flameacanthus/1": [
+   204,
+   191,
+   16,
+   16
+  ],
+  "plants/flameacanthus/2": [
+   456,
+   158,
+   16,
+   19
+  ],
+  "plants/flameacanthus/3": [
+   473,
+   158,
+   16,
+   19
+  ],
+  "plants/frogfruit/0": [
+   289,
+   241,
+   16,
+   10
+  ],
+  "plants/frogfruit/1": [
+   425,
+   227,
+   16,
+   11
+  ],
+  "plants/frogfruit/2": [
+   187,
+   211,
+   16,
+   15
+  ],
+  "plants/frogfruit/3": [
+   204,
+   211,
+   16,
+   15
+  ],
+  "plants/garlic/0": [
+   493,
+   227,
+   16,
+   11
+  ],
+  "plants/garlic/1": [
+   0,
+   241,
+   16,
+   11
+  ],
+  "plants/garlic/2": [
+   391,
+   191,
+   16,
+   16
+  ],
+  "plants/garlic/3": [
+   408,
+   191,
+   16,
+   16
+  ],
+  "plants/gcmuhly/0": [
+   34,
+   253,
+   16,
+   8
+  ],
+  "plants/gcmuhly/1": [
+   272,
+   211,
+   16,
+   14
+  ],
+  "plants/gcmuhly/2": [
+   221,
+   191,
+   16,
+   16
+  ],
+  "plants/gcmuhly/3": [
+   238,
+   191,
+   16,
+   16
+  ],
+  "plants/indianblanket/0": [
+   170,
+   241,
+   16,
+   10
+  ],
+  "plants/indianblanket/1": [
+   357,
+   227,
+   16,
+   11
+  ],
+  "plants/indianblanket/2": [
+   51,
+   211,
+   16,
+   15
+  ],
+  "plants/indianblanket/3": [
+   68,
+   211,
+   16,
+   15
+  ],
+  "plants/kale/0": [
+   425,
+   241,
+   16,
+   10
+  ],
+  "plants/kale/1": [
+   136,
+   227,
+   16,
+   12
+  ],
+  "plants/kale/2": [
+   442,
+   211,
+   16,
+   13
+  ],
+  "plants/kale/3": [
+   459,
+   211,
+   16,
+   13
+  ],
+  "plants/lettuce/0": [
+   442,
+   241,
+   16,
+   10
+  ],
+  "plants/lettuce/1": [
+   153,
+   227,
+   16,
+   12
+  ],
+  "plants/lettuce/2": [
+   170,
+   227,
+   16,
+   12
+  ],
+  "plants/lettuce/3": [
+   476,
+   211,
+   16,
+   13
+  ],
+  "plants/littlebluestem/0": [
+   51,
+   253,
+   16,
+   8
+  ],
+  "plants/littlebluestem/1": [
+   289,
+   211,
+   16,
+   14
+  ],
+  "plants/littlebluestem/2": [
+   255,
+   191,
+   16,
+   16
+  ],
+  "plants/littlebluestem/3": [
+   272,
+   191,
+   16,
+   16
+  ],
+  "plants/liveoak/0": [
+   306,
+   241,
+   16,
+   10
+  ],
+  "plants/liveoak/1": [
+   17,
+   158,
+   31,
+   32
+  ],
+  "plants/liveoak/2": [
+   0,
+   0,
+   70,
+   79
+  ],
+  "plants/liveoak/3": [
+   71,
+   0,
+   70,
+   79
+  ],
+  "plants/mealysage/0": [
+   187,
+   241,
+   16,
+   10
+  ],
+  "plants/mealysage/1": [
+   374,
+   227,
+   16,
+   11
+  ],
+  "plants/mealysage/2": [
+   85,
+   211,
+   16,
+   15
+  ],
+  "plants/mealysage/3": [
+   102,
+   211,
+   16,
+   15
+  ],
+  "plants/mexicanplum/0": [
+   374,
+   241,
+   16,
+   10
+  ],
+  "plants/mexicanplum/1": [
+   420,
+   80,
+   32,
+   36
+  ],
+  "plants/mexicanplum/2": [
+   69,
+   80,
+   68,
+   77
+  ],
+  "plants/mexicanplum/3": [
+   138,
+   80,
+   68,
+   77
+  ],
+  "plants/mistflower/0": [
+   136,
+   241,
+   16,
+   10
+  ],
+  "plants/mistflower/1": [
+   323,
+   227,
+   16,
+   11
+  ],
+  "plants/mistflower/2": [
+   493,
+   191,
+   16,
+   15
+  ],
+  "plants/mistflower/3": [
+   0,
+   211,
+   16,
+   15
+  ],
+  "plants/passionvine/0": [
+   320,
+   158,
+   16,
+   27
+  ],
+  "plants/passionvine/1": [
+   337,
+   158,
+   16,
+   27
+  ],
+  "plants/passionvine/2": [
+   252,
+   158,
+   16,
+   28
+  ],
+  "plants/passionvine/3": [
+   269,
+   158,
+   16,
+   28
+  ],
+  "plants/pecan/0": [
+   323,
+   241,
+   16,
+   10
+  ],
+  "plants/pecan/1": [
+   354,
+   80,
+   32,
+   36
+  ],
+  "plants/pecan/2": [
+   256,
+   0,
+   68,
+   77
+  ],
+  "plants/pecan/3": [
+   325,
+   0,
+   68,
+   77
+  ],
+  "plants/pepper/0": [
+   0,
+   253,
+   16,
+   9
+  ],
+  "plants/pepper/1": [
+   85,
+   227,
+   16,
+   12
+  ],
+  "plants/pepper/2": [
+   323,
+   211,
+   16,
+   14
+  ],
+  "plants/pepper/3": [
+   340,
+   211,
+   16,
+   14
+  ],
+  "plants/possumhaw/0": [
+   340,
+   241,
+   16,
+   10
+  ],
+  "plants/possumhaw/1": [
+   387,
+   80,
+   32,
+   36
+  ],
+  "plants/possumhaw/2": [
+   394,
+   0,
+   68,
+   77
+  ],
+  "plants/possumhaw/3": [
+   0,
+   80,
+   68,
+   77
+  ],
+  "plants/radish/0": [
+   476,
+   227,
+   16,
+   11
+  ],
+  "plants/radish/1": [
+   238,
+   227,
+   16,
+   12
+  ],
+  "plants/radish/2": [
+   17,
+   227,
+   16,
+   13
+  ],
+  "plants/radish/3": [
+   391,
+   211,
+   16,
+   14
+  ],
+  "plants/scarletsage/0": [
+   119,
+   241,
+   16,
+   10
+  ],
+  "plants/scarletsage/1": [
+   306,
+   227,
+   16,
+   11
+  ],
+  "plants/scarletsage/2": [
+   459,
+   191,
+   16,
+   15
+  ],
+  "plants/scarletsage/3": [
+   476,
+   191,
+   16,
+   15
+  ],
+  "plants/seaoats/0": [
+   68,
+   253,
+   16,
+   8
+  ],
+  "plants/seaoats/1": [
+   306,
+   211,
+   16,
+   14
+  ],
+  "plants/seaoats/2": [
+   289,
+   191,
+   16,
+   16
+  ],
+  "plants/seaoats/3": [
+   306,
+   191,
+   16,
+   16
+  ],
+  "plants/spinach/0": [
+   459,
+   241,
+   16,
+   10
+  ],
+  "plants/spinach/1": [
+   476,
+   241,
+   16,
+   10
+  ],
+  "plants/spinach/2": [
+   187,
+   227,
+   16,
+   12
+  ],
+  "plants/spinach/3": [
+   204,
+   227,
+   16,
+   12
+  ],
+  "plants/squash/0": [
+   442,
+   227,
+   16,
+   11
+  ],
+  "plants/squash/1": [
+   221,
+   211,
+   16,
+   15
+  ],
+  "plants/squash/2": [
+   238,
+   211,
+   16,
+   15
+  ],
+  "plants/squash/3": [
+   388,
+   158,
+   16,
+   21
+  ],
+  "plants/turkscap/0": [
+   17,
+   241,
+   16,
+   10
+  ],
+  "plants/turkscap/1": [
+   422,
+   158,
+   16,
+   19
+  ],
+  "plants/turkscap/2": [
+   49,
+   158,
+   16,
+   31
+  ],
+  "plants/turkscap/3": [
+   453,
+   80,
+   16,
+   32
+  ],
+  "plants/txlantana/0": [
+   34,
+   241,
+   16,
+   10
+  ],
+  "plants/txlantana/1": [
+   439,
+   158,
+   16,
+   19
+  ],
+  "plants/txlantana/2": [
+   66,
+   158,
+   16,
+   31
+  ],
+  "plants/txlantana/3": [
+   470,
+   80,
+   16,
+   32
+  ],
+  "plants/txredbud/0": [
+   357,
+   241,
+   16,
+   10
+  ],
+  "plants/txredbud/1": [
+   117,
+   158,
+   32,
+   31
+  ],
+  "plants/txredbud/2": [
+   142,
+   0,
+   56,
+   79
+  ],
+  "plants/txredbud/3": [
+   199,
+   0,
+   56,
+   79
+  ],
+  "plants/winecup/0": [
+   272,
+   241,
+   16,
+   10
+  ],
+  "plants/winecup/1": [
+   408,
+   227,
+   16,
+   11
+  ],
+  "plants/winecup/2": [
+   153,
+   211,
+   16,
+   15
+  ],
+  "plants/winecup/3": [
+   170,
+   211,
+   16,
+   15
+  ],
+  "plants/yaupon/0": [
+   238,
+   241,
+   16,
+   10
+  ],
+  "plants/yaupon/1": [
+   340,
+   191,
+   16,
+   16
+  ],
+  "plants/yaupon/2": [
+   51,
+   191,
+   16,
+   19
+  ],
+  "plants/yaupon/3": [
+   68,
+   191,
+   16,
+   19
+  ],
+  "tiles/grass": [
+   119,
+   191,
+   16,
+   16
+  ],
+  "tiles/grass_1": [
+   136,
+   191,
+   16,
+   16
+  ],
+  "tiles/grass_2": [
+   153,
+   191,
+   16,
+   16
+  ]
+ },
+ "autotiles": [
+  "driveway",
+  "path",
+  "soil"
+ ],
+ "tileVariants": {
+  "grass": [
+   "grass",
+   "grass_1",
+   "grass_2"
+  ]
+ }
 }

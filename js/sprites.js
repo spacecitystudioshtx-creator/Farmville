@@ -125,6 +125,23 @@
     },
   };
 
+  // Edge-aware ground from a 3x3 island block (corners, edges, center). Each
+  // tile is assembled from four quarter tiles; a quarter's piece depends on
+  // whether its vertical and horizontal neighbors share the terrain, which
+  // covers islands, strips one tile wide, and L shapes. Off-map counts as the
+  // same terrain so beds don't get borders against the lot edge.
+  function drawAutotile(ctx, block, type, x, y) {
+    const piece = block.width / 3, q = piece / 2, dq = TILE / 2;
+    const same = (dx, dy) => { const t = at(x + dx, y + dy); return t == null || t === type; };
+    for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+      const col = same(sx, 0) ? 1 : sx < 0 ? 0 : 2;
+      const row = same(0, sy) ? 1 : sy < 0 ? 0 : 2;
+      const qx = sx < 0 ? 0 : 1, qy = sy < 0 ? 0 : 1;
+      ctx.drawImage(block, col * piece + qx * q, row * piece + qy * q, q, q,
+        x * TILE + qx * dq, y * TILE + qy * dq, dq, dq);
+    }
+  }
+
   // picket fence overlay for the lot border (drawn on grass border tiles)
   function drawFence(ctx, x, y, vertical) {
     const img = window.ART && window.ART.get && window.ART.get(vertical ? 'fence_v' : 'fence_h');
@@ -331,7 +348,10 @@
   window.SPRITES = {
     TILE,
     drawTerrain(ctx, type, x, y) {
-      const img = window.ART && window.ART.tile(type);
+      const A = window.ART;
+      const auto = A && A.autotile && A.autotile(type);
+      if (auto) { drawAutotile(ctx, auto, type, x, y); return; }
+      const img = A && A.tile(type, x, y);
       if (img) { ctx.drawImage(img, x * TILE, y * TILE, TILE, TILE); return; }
       (TERRAIN[type] || TERRAIN.grass)(ctx, x, y);
     },

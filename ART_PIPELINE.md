@@ -1,5 +1,24 @@
 # 🎨 GardenStar art pipeline
 
+## LimeZu (current art)
+
+The game uses LimeZu's farm sheets, cut into one atlas by `tools/slice_limezu.py`:
+
+```bash
+# put the pack's 16x16 sheets in one folder as terrain.png, fences.png, crops.png, trees.png
+python3 tools/slice_limezu.py --sheets /path/to/sheets --out assets/art
+```
+
+- Ground uses the pack's autotile islands, so beds, paths and the driveway get
+  grass borders wherever they meet the lawn (`drawAutotile` in `js/sprites.js`).
+- Vegetables use the matching crop and its real growth stages. Natives with no
+  pack art use a pack plant tinted to the species' bloom color from `js/plants.js`.
+- Only the atlas is committed. LimeZu's license allows editing and commercial use
+  with credit, not redistributing the pack.
+- Missing: the house. The buildings sheet we have was resized and is blurry; drop
+  in the original 16x16 PNG and map the farmhouse in the slicer.
+
+
 ## Sprout Lands (the chosen direction)
 
 `tools/slice_sprout.py` slices the Sprout Lands pack straight into the app's

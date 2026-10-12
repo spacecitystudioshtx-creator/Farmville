@@ -26,6 +26,27 @@ window.ART = (function () {
     });
   }
 
+  // One atlas image, cut into a canvas per frame so the renderer can treat
+  // every frame like a standalone image (drawImage + width/height).
+  function loadAtlas(url, frames) {
+    return new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => {
+        for (const [key, [x, y, w, h]] of Object.entries(frames)) {
+          const c = document.createElement('canvas');
+          c.width = w; c.height = h;
+          c.getContext('2d').drawImage(img, x, y, w, h, 0, 0, w, h);
+          cache[key] = c;
+        }
+        resolve();
+      };
+      img.onerror = () => resolve();
+      img.src = url;
+    });
+  }
+  let autotiles = new Set();
+  let variants = {};
+
   function bloomBucket(hex) {
     const n = parseInt(hex.slice(1), 16);
     const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
@@ -75,6 +96,9 @@ window.ART = (function () {
           credit = m.credit || '';
           plantScale = m.plantScale || 1;
           const jobs = [];
+          if (m.atlas) jobs.push(loadAtlas('assets/art/' + m.atlas, m.frames || {}));
+          autotiles = new Set(m.autotiles || []);
+          variants = m.tileVariants || {};
           for (const t of m.tiles || []) jobs.push(load('tiles/' + t, `assets/art/tiles/${t}.png`));
           for (const [id, stages] of Object.entries(m.plants || {}))
             for (const s of stages) jobs.push(load(`plants/${id}/${s}`, `assets/art/plants/${id}_s${s}.png`));
@@ -86,7 +110,18 @@ window.ART = (function () {
       if (onReady) onReady();
     },
     get(key) { return cache[key] || null; },
-    tile(type) { return cache['tiles/' + type] || null; },
+    tile(type, x, y) {
+      const v = variants[type];
+      if (v && x != null) {
+        // sparse variation: most tiles plain, every ~6th gets a decorated variant
+        const h = ((x * 73856093) ^ (y * 19349663)) >>> 0;
+        const pick = h % 6 === 0 ? v[1 + (h >> 3) % (v.length - 1)] : v[0];
+        if (cache['tiles/' + pick]) return cache['tiles/' + pick];
+      }
+      return cache['tiles/' + type] || null;
+    },
+    // 48x48 (3x3 pieces) ground island for edge-aware terrain, or null
+    autotile(type) { return autotiles.has(type) ? cache['auto/' + type] || null : null; },
     creditLine() { return credit; },
     plantScale() { return plantScale; },
     // exact species art, then facsimiles, at the nearest available stage

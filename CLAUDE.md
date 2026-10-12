@@ -35,7 +35,11 @@ action also takes back its XP.
 - Mobile first: map fills the screen, toolbar at the bottom, panels are sheets
   (docked right at ≥900px). One finger pans (paints in Build); two fingers pinch.
 - UI copy is plain and specific; plant advice is conservative.
-- Map art is placeholder until the owner picks an art source (see Build Guide).
+- Map art is LimeZu (paid pack, commercial use with credit; the credit line is
+  in `assets/art/manifest.json` and shows in the app). Rebuild the atlas with
+  `tools/slice_limezu.py`; commit only the atlas, never the pack's sheets.
+  Natives without pack art are pack plants tinted to their real bloom color.
+  The house is still procedural until a crisp buildings sheet arrives.
   The free Sprout Lands pack is non-commercial: don't commit its assets.
 
 ## Test
