@@ -7,6 +7,9 @@ Usage:
 DIR must hold (rename the pack files to these):
   barn_red.png, barn_teal.png, barn_yellow.png, barn_gray.png
                - the big barn in each color (256x256, or a 3x export: 768x768)
+  me_13.png, me_14.png, me_150.png, me_155.png
+               - Modern Exteriors sheets (Tileset_13/14/150/155; the RPG Maker MV
+                 edition's 768px sheets are fine, they're 3x the 16px originals)
   terrain.png  - ground autotiles (grass, sand, tilled soil, dirt, water)
   fences.png   - fences and garden beds
   crops.png    - crops, one 32px-tall row per crop, a column per growth stage
@@ -107,6 +110,19 @@ HOUSE_ROOF = (192, 96, 208, 112)    # seamless 16x16 corrugated metal
 HOUSE_WALL = (176, 183, 230, 239)   # eave, boards, two windows, foundation; repeats sideways
 HOUSE_PILLAR = (230, 186, 237, 239)  # white corner post for wall ends
 HOUSE_DOOR = (96, 207, 121, 256)    # X-braced barn door with its header
+
+# Modern Exteriors pieces for suburban houses: (sheet, x0, y0, x1, y1), 256px sheets
+ME_ROOFS = {
+    'gray': ('me_155', 128, 16, 144, 32),   # slate / asphalt shingle
+    'red': ('me_13', 16, 32, 32, 48),
+    'brown': ('me_14', 16, 32, 32, 48),
+}
+ME_BRICK = ('me_150', 40, 200, 56, 216)          # seamless brick
+ME_WINDOW_WIDE = ('me_150', 33, 166, 71, 187)    # white three-pane window
+ME_WHITE_SIDING = ('me_150', 22, 160, 82, 194)   # siding + window unit, repeats sideways
+ME_CREAM_SIDING = ('me_13', 96, 160, 112, 168)   # cream boards (8px, tiles vertically)
+ME_WINDOW_FRAMED = ('me_13', 48, 96, 80, 113)    # wood-framed window
+ME_DOOR = ('me_13', 32, 146, 48, 178)            # front door with glass panel
 FENCE_H = (304, 96)
 FENCE_V = (288, 112)
 
@@ -186,6 +202,38 @@ def grass_variants(base):
     return out
 
 
+def wall_unit(width, texture, window=None, height=32):
+    """A repeating 1-story wall: eave trim, texture, a centered window,
+    foundation strip. Repeats sideways, so the house can be any width."""
+    trim, edge, base = (226, 226, 236, 255), (43, 36, 51, 255), (128, 128, 146, 255)
+    u = Image.new('RGBA', (width, height))
+    for y in range(0, height, texture.height):
+        for x in range(0, width, texture.width):
+            u.alpha_composite(texture, (x, y))
+    if window is not None:
+        u.alpha_composite(window, ((width - window.width) // 2, 7))
+    for x in range(width):
+        u.putpixel((x, 0), edge)
+        u.putpixel((x, 1), trim)
+        u.putpixel((x, 2), trim)
+        u.putpixel((x, 3), edge)
+        for y in range(height - 3, height):
+            u.putpixel((x, y), base if y < height - 1 else edge)
+    return u
+
+
+def add_suburban_walls(frames, me):
+    door = me(ME_DOOR)
+    brick = me(ME_BRICK)
+    frames['house/wall/brick'] = wall_unit(48, brick, me(ME_WINDOW_WIDE))
+    cream = me(ME_CREAM_SIDING)
+    frames['house/wall/cream'] = wall_unit(48, cream, me(ME_WINDOW_FRAMED))
+    white = me(ME_WHITE_SIDING)
+    frames['house/wall/white'] = wall_unit(white.width, white.crop((0, 2, white.width, white.height)), None, 34)
+    for w in ('brick', 'cream', 'white'):
+        frames[f'house/door/{w}'] = door
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--sheets', required=True)
@@ -199,15 +247,26 @@ def main():
 
     frames = {}  # key -> Image
 
+    def me(spec):
+        sheet, x0, y0, x1, y1 = spec
+        im = load(sheet + '.png')
+        if im.width == 768:
+            im = im.resize((256, 256), Image.NEAREST)
+        return im.crop((x0, y0, x1, y1))
+
+    for name, spec in ME_ROOFS.items():
+        frames[f'house/roof/{name}'] = me(spec)
+    add_suburban_walls(frames, me)
+
     for color in HOUSE_COLORS:
         barn = load(f'barn_{color}.png')
         if barn.width == 768:  # 3x nearest-neighbor export of the 256px original
             barn = barn.resize((256, 256), Image.NEAREST)
         if color == 'red':
-            frames['house/roof'] = barn.crop(HOUSE_ROOF)
-        frames[f'house/wall/{color}'] = barn.crop(HOUSE_WALL)
-        frames[f'house/pillar/{color}'] = barn.crop(HOUSE_PILLAR)
-        frames[f'house/door/{color}'] = barn.crop(HOUSE_DOOR)
+            frames['house/roof/metal'] = barn.crop(HOUSE_ROOF)
+        frames[f'house/wall/barn_{color}'] = barn.crop(HOUSE_WALL)
+        frames[f'house/pillar/barn_{color}'] = barn.crop(HOUSE_PILLAR)
+        frames[f'house/door/barn_{color}'] = barn.crop(HOUSE_DOOR)
 
     gx, gy = GRASS_TILE
     for i, t in enumerate(grass_variants(terrain.crop((gx, gy, gx + 16, gy + 16)))):
@@ -253,7 +312,8 @@ def main():
         'frames': {k: list(v) for k, v in sorted(pos.items())},
         'autotiles': sorted(AUTOTILES),
         'tileVariants': {'grass': ['grass', 'grass_1', 'grass_2']},
-        'houseColors': list(HOUSE_COLORS),
+        'houseWalls': ['brick', 'cream', 'white'] + [f'barn_{c}' for c in HOUSE_COLORS],
+        'houseRoofs': ['gray', 'red', 'brown', 'metal'],
     }
     with open(os.path.join(a.out, 'manifest.json'), 'w') as f:
         json.dump(manifest, f, indent=1)

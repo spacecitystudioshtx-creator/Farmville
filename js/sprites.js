@@ -137,11 +137,11 @@
   // ---------- house from barn pieces ----------
   function houseArt() {
     const A = window.ART;
-    if (!A || !A.get || !A.get('house/roof')) return null;
-    const c = A.houseColor ? A.houseColor() : 'red';
-    const pick = k => A.get(`house/${k}/${c}`) || A.get(`house/${k}/red`);
-    const wall = pick('wall');
-    return wall ? { roof: A.get('house/roof'), wall, pillar: pick('pillar'), door: pick('door'), k: A.plantScale() } : null;
+    if (!A || !A.houseStyle) return null;
+    const { wall: w, roof: r } = A.houseStyle();
+    const wall = A.get(`house/wall/${w}`), roof = A.get(`house/roof/${r}`);
+    if (!wall || !roof) return null;
+    return { roof, wall, pillar: A.get(`house/pillar/${w}`), door: A.get(`house/door/${w}`), k: A.plantScale() };
   }
 
   // Each column of house tiles: metal roof down to the front wall, then a

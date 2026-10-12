@@ -117,6 +117,33 @@ async function run(browser, label, contextOpts, mobile) {
   check('plant anyway plants it', (await plantAt(page, 12, 22)) === ids.off);
   check('out-of-season planting earns no XP', (await xp(page)) === before, (await xp(page)) - before);
 
+  // trees have their own filter; mapping an existing tree is full-grown and earns no XP
+  await page.evaluate(() => window.__GS.openSheet('shop'));
+  await page.click('[data-mode="existing"]');
+  await page.click('.chips [data-f="tree"]');
+  await page.waitForTimeout(150);
+  const treeIds = await page.$$eval('.item[data-pick]', els => els.map(e => e.dataset.pick));
+  check('Trees filter lists only trees', treeIds.length > 0 && await page.evaluate(ids =>
+    ids.every(id => { const p = window.PLANT_BY_ID[id]; return p.type === 'tree' || p.type === 'shrub'; }), treeIds), treeIds);
+  const spot = await page.evaluate(() => {
+    for (let y = 2; y < 24; y++) for (let x = 2; x < 38; x++)
+      if (window.YARD.isPlantable(x, y) && !window.YARD.plantAt(x, y)) return { x, y };
+  });
+  await page.click(`[data-pick="${treeIds[0]}"]`);
+  await page.waitForTimeout(150);
+  before = await xp(page);
+  await tap(page, mobile, await tilePoint(page, spot.x, spot.y));
+  check('existing tree maps without a warning', !(await page.isVisible('#dialog')) && (await plantAt(page, spot.x, spot.y)) === treeIds[0]);
+  check('existing tree earns no XP', (await xp(page)) === before, (await xp(page)) - before);
+  check('existing tree goes in full-grown', await page.evaluate(([x, y]) => {
+    const r = window.YARD.plantAt(x, y);
+    return (Date.now() - new Date(r.planted + 'T12:00:00')) / 864e5 > window.PLANT_BY_ID[r.id].establishDays;
+  }, [spot.x, spot.y]));
+  await page.evaluate(() => window.__GS.openSheet('shop'));
+  await page.click('[data-mode="new"]');
+  await page.evaluate(() => window.__GS.closeSheet());
+  await page.waitForTimeout(300);
+
   // watering: thirsty plant earns XP, a just-watered plant does not
   await page.evaluate(() => { window.YARD.plantAt(12, 22).lastWatered = window.YARD.todayStr(-5); });
   await page.evaluate(() => document.querySelector('.toolbar [data-tool="water"]').click());

@@ -22,656 +22,710 @@
    48
   ],
   "fence_h": [
-   34,
-   238,
+   289,
+   241,
    16,
    16
   ],
   "fence_v": [
-   51,
-   238,
+   306,
+   241,
    16,
    16
   ],
-  "house/door/gray": [
+  "house/door/barn_gray": [
    26,
    158,
    25,
    49
   ],
-  "house/door/red": [
+  "house/door/barn_red": [
    459,
    80,
    25,
    49
   ],
-  "house/door/teal": [
+  "house/door/barn_teal": [
    485,
    80,
    25,
    49
   ],
-  "house/door/yellow": [
+  "house/door/barn_yellow": [
    0,
    158,
    25,
    49
   ],
-  "house/pillar/gray": [
+  "house/door/brick": [
+   457,
+   158,
+   16,
+   32
+  ],
+  "house/door/cream": [
+   474,
+   158,
+   16,
+   32
+  ],
+  "house/door/white": [
+   491,
+   158,
+   16,
+   32
+  ],
+  "house/pillar/barn_gray": [
    451,
    80,
    7,
    53
   ],
-  "house/pillar/red": [
+  "house/pillar/barn_red": [
    427,
    80,
    7,
    53
   ],
-  "house/pillar/teal": [
+  "house/pillar/barn_teal": [
    435,
    80,
    7,
    53
   ],
-  "house/pillar/yellow": [
+  "house/pillar/barn_yellow": [
    443,
    80,
    7,
    53
   ],
-  "house/roof": [
-   476,
-   208,
+  "house/roof/brown": [
+   204,
+   241,
    16,
    16
   ],
-  "house/wall/gray": [
+  "house/roof/gray": [
+   170,
+   241,
+   16,
+   16
+  ],
+  "house/roof/metal": [
+   221,
+   241,
+   16,
+   16
+  ],
+  "house/roof/red": [
+   187,
+   241,
+   16,
+   16
+  ],
+  "house/wall/barn_gray": [
    372,
    80,
    54,
    56
   ],
-  "house/wall/red": [
+  "house/wall/barn_red": [
    207,
    80,
    54,
    56
   ],
-  "house/wall/teal": [
+  "house/wall/barn_teal": [
    262,
    80,
    54,
    56
   ],
-  "house/wall/yellow": [
+  "house/wall/barn_yellow": [
    317,
    80,
    54,
    56
   ],
+  "house/wall/brick": [
+   359,
+   158,
+   48,
+   32
+  ],
+  "house/wall/cream": [
+   408,
+   158,
+   48,
+   32
+  ],
+  "house/wall/white": [
+   298,
+   158,
+   60,
+   34
+  ],
   "plants/aquaticmilkweed/0": [
-   68,
-   284,
+   323,
+   293,
    16,
    10
   ],
   "plants/aquaticmilkweed/1": [
-   255,
-   271,
+   0,
+   293,
    16,
    11
   ],
   "plants/aquaticmilkweed/2": [
-   493,
    238,
+   261,
    16,
    15
   ],
   "plants/aquaticmilkweed/3": [
-   0,
    255,
+   261,
    16,
    15
   ],
   "plants/autumnsage/0": [
-   476,
-   271,
+   221,
+   293,
    16,
    10
   ],
   "plants/autumnsage/1": [
-   153,
-   271,
+   408,
+   278,
    16,
    11
   ],
   "plants/autumnsage/2": [
-   289,
-   238,
+   34,
+   261,
    16,
    15
   ],
   "plants/autumnsage/3": [
-   306,
-   238,
+   51,
+   261,
    16,
    15
   ],
   "plants/basil/0": [
-   391,
-   284,
+   136,
+   305,
    16,
    9
   ],
   "plants/basil/1": [
-   136,
-   271,
+   391,
+   278,
    16,
    12
   ],
   "plants/basil/2": [
-   272,
-   255,
+   17,
+   278,
    16,
    14
   ],
   "plants/basil/3": [
-   289,
-   255,
+   34,
+   278,
    16,
    14
   ],
   "plants/beautyberry/0": [
-   85,
-   284,
+   340,
+   293,
    16,
    10
   ],
   "plants/beautyberry/1": [
-   187,
-   238,
+   442,
+   241,
    16,
    16
   ],
   "plants/beautyberry/2": [
-   374,
-   208,
+   68,
+   241,
    16,
    19
   ],
   "plants/beautyberry/3": [
-   391,
-   208,
+   85,
+   241,
    16,
    19
   ],
   "plants/blackeyedsusan/0": [
-   17,
-   284,
+   272,
+   293,
    16,
    10
   ],
   "plants/blackeyedsusan/1": [
-   204,
-   271,
+   459,
+   278,
    16,
    11
   ],
   "plants/blackeyedsusan/2": [
-   391,
-   238,
+   136,
+   261,
    16,
    15
   ],
   "plants/blackeyedsusan/3": [
-   408,
-   238,
+   153,
+   261,
    16,
    15
   ],
   "plants/broccoli/0": [
-   272,
-   284,
+   17,
+   305,
    16,
    10
   ],
   "plants/broccoli/1": [
-   323,
-   271,
+   68,
+   293,
    16,
    11
   ],
   "plants/broccoli/2": [
-   221,
-   255,
+   476,
+   261,
    16,
    14
   ],
   "plants/broccoli/3": [
-   238,
-   255,
+   493,
+   261,
    16,
    14
   ],
   "plants/bushbeans/0": [
-   0,
+   201,
    208,
    16,
    29
   ],
   "plants/bushbeans/1": [
-   17,
+   218,
    208,
    16,
    29
   ],
   "plants/bushbeans/2": [
-   34,
+   235,
    208,
    16,
    29
   ],
   "plants/bushbeans/3": [
-   51,
+   252,
    208,
    16,
    29
   ],
   "plants/buttonbush/0": [
-   119,
-   284,
+   374,
+   293,
    16,
    10
   ],
   "plants/buttonbush/1": [
-   221,
-   238,
+   476,
+   241,
    16,
    16
   ],
   "plants/buttonbush/2": [
-   442,
-   208,
+   136,
+   241,
    16,
    19
   ],
   "plants/buttonbush/3": [
-   459,
-   208,
+   153,
+   241,
    16,
    19
   ],
   "plants/cardinalflower/0": [
-   459,
-   271,
+   204,
+   293,
    16,
    10
   ],
   "plants/cardinalflower/1": [
-   357,
-   208,
+   51,
+   241,
    16,
    19
   ],
   "plants/cardinalflower/2": [
-   449,
-   158,
+   151,
+   208,
    16,
    31
   ],
   "plants/cardinalflower/3": [
-   349,
-   158,
+   51,
+   208,
    16,
    32
   ],
   "plants/carrot/0": [
-   85,
-   271,
+   340,
+   278,
    16,
    12
   ],
   "plants/carrot/1": [
-   357,
-   255,
+   102,
+   278,
    16,
    13
   ],
   "plants/carrot/2": [
-   374,
-   255,
+   119,
+   278,
    16,
    13
   ],
   "plants/carrot/3": [
-   119,
-   255,
+   374,
+   261,
    16,
    15
   ],
   "plants/cilantro/0": [
-   119,
-   271,
+   374,
+   278,
    16,
    12
   ],
   "plants/cilantro/1": [
-   408,
-   255,
+   153,
+   278,
    16,
    13
   ],
   "plants/cilantro/2": [
-   425,
-   255,
+   170,
+   278,
    16,
    13
   ],
   "plants/cilantro/3": [
-   442,
-   255,
+   187,
+   278,
    16,
    13
   ],
   "plants/coneflower/0": [
-   442,
-   271,
+   187,
+   293,
    16,
    10
   ],
   "plants/coneflower/1": [
-   340,
-   208,
+   34,
+   241,
    16,
    19
   ],
   "plants/coneflower/2": [
-   432,
-   158,
+   134,
+   208,
    16,
    31
   ],
   "plants/coneflower/3": [
-   332,
-   158,
+   34,
+   208,
    16,
    32
   ],
   "plants/coralhoneysuckle/0": [
-   136,
+   337,
    208,
    16,
    27
   ],
   "plants/coralhoneysuckle/1": [
-   153,
+   354,
    208,
    16,
    27
   ],
   "plants/coralhoneysuckle/2": [
-   68,
+   269,
    208,
    16,
    28
   ],
   "plants/coralhoneysuckle/3": [
-   85,
+   286,
    208,
    16,
    28
   ],
   "plants/cucumber/0": [
-   255,
-   284,
+   0,
+   305,
    16,
    10
   ],
   "plants/cucumber/1": [
-   476,
-   255,
+   221,
+   278,
    16,
    12
   ],
   "plants/cucumber/2": [
-   493,
-   255,
+   238,
+   278,
    16,
    12
   ],
   "plants/cucumber/3": [
-   255,
+   456,
    208,
    16,
    20
   ],
   "plants/falltomato/0": [
-   357,
-   284,
+   102,
+   305,
    16,
    9
   ],
   "plants/falltomato/1": [
-   238,
-   238,
+   493,
+   241,
    16,
    16
   ],
   "plants/falltomato/2": [
-   204,
+   405,
    208,
    16,
    23
   ],
   "plants/falltomato/3": [
-   221,
+   422,
    208,
    16,
    23
   ],
   "plants/flameacanthus/0": [
-   425,
-   271,
+   170,
+   293,
    16,
    10
   ],
   "plants/flameacanthus/1": [
-   68,
-   238,
+   323,
+   241,
    16,
    16
   ],
   "plants/flameacanthus/2": [
-   306,
-   208,
+   0,
+   241,
    16,
    19
   ],
   "plants/flameacanthus/3": [
-   323,
-   208,
+   17,
+   241,
    16,
    19
   ],
   "plants/frogfruit/0": [
-   153,
-   284,
+   408,
+   293,
    16,
    10
   ],
   "plants/frogfruit/1": [
-   289,
-   271,
+   34,
+   293,
    16,
    11
   ],
   "plants/frogfruit/2": [
-   51,
-   255,
+   306,
+   261,
    16,
    15
   ],
   "plants/frogfruit/3": [
-   68,
-   255,
+   323,
+   261,
    16,
    15
   ],
   "plants/garlic/0": [
-   357,
-   271,
+   102,
+   293,
    16,
    11
   ],
   "plants/garlic/1": [
-   374,
-   271,
+   119,
+   293,
    16,
    11
   ],
   "plants/garlic/2": [
-   255,
-   238,
+   0,
+   261,
    16,
    16
   ],
   "plants/garlic/3": [
-   272,
-   238,
+   17,
+   261,
    16,
    16
   ],
   "plants/gcmuhly/0": [
-   408,
-   284,
+   153,
+   305,
    16,
    8
   ],
   "plants/gcmuhly/1": [
-   136,
-   255,
+   391,
+   261,
    16,
    14
   ],
   "plants/gcmuhly/2": [
-   85,
-   238,
+   340,
+   241,
    16,
    16
   ],
   "plants/gcmuhly/3": [
-   102,
-   238,
+   357,
+   241,
    16,
    16
   ],
   "plants/indianblanket/0": [
-   34,
-   284,
+   289,
+   293,
    16,
    10
   ],
   "plants/indianblanket/1": [
-   221,
-   271,
+   476,
+   278,
    16,
    11
   ],
   "plants/indianblanket/2": [
-   425,
-   238,
+   170,
+   261,
    16,
    15
   ],
   "plants/indianblanket/3": [
-   442,
-   238,
+   187,
+   261,
    16,
    15
   ],
   "plants/kale/0": [
-   289,
-   284,
+   34,
+   305,
    16,
    10
   ],
   "plants/kale/1": [
-   0,
-   271,
+   255,
+   278,
    16,
    12
   ],
   "plants/kale/2": [
-   306,
-   255,
+   51,
+   278,
    16,
    13
   ],
   "plants/kale/3": [
-   323,
-   255,
+   68,
+   278,
    16,
    13
   ],
   "plants/lettuce/0": [
-   306,
-   284,
+   51,
+   305,
    16,
    10
   ],
   "plants/lettuce/1": [
-   17,
-   271,
+   272,
+   278,
    16,
    12
   ],
   "plants/lettuce/2": [
-   34,
-   271,
+   289,
+   278,
    16,
    12
   ],
   "plants/lettuce/3": [
-   340,
-   255,
+   85,
+   278,
    16,
    13
   ],
   "plants/littlebluestem/0": [
-   425,
-   284,
+   170,
+   305,
    16,
    8
   ],
   "plants/littlebluestem/1": [
-   153,
-   255,
+   408,
+   261,
    16,
    14
   ],
   "plants/littlebluestem/2": [
-   119,
-   238,
+   374,
+   241,
    16,
    16
   ],
   "plants/littlebluestem/3": [
-   136,
-   238,
+   391,
+   241,
    16,
    16
   ],
   "plants/liveoak/0": [
-   170,
-   284,
+   425,
+   293,
    16,
    10
   ],
   "plants/liveoak/1": [
-   366,
-   158,
+   68,
+   208,
    31,
    32
   ],
@@ -688,32 +742,32 @@
    79
   ],
   "plants/mealysage/0": [
-   51,
-   284,
+   306,
+   293,
    16,
    10
   ],
   "plants/mealysage/1": [
-   238,
-   271,
+   493,
+   278,
    16,
    11
   ],
   "plants/mealysage/2": [
-   459,
-   238,
+   204,
+   261,
    16,
    15
   ],
   "plants/mealysage/3": [
-   476,
-   238,
+   221,
+   261,
    16,
    15
   ],
   "plants/mexicanplum/0": [
-   238,
-   284,
+   493,
+   293,
    16,
    10
   ],
@@ -736,56 +790,56 @@
    77
   ],
   "plants/mistflower/0": [
-   0,
-   284,
+   255,
+   293,
    16,
    10
   ],
   "plants/mistflower/1": [
-   187,
-   271,
+   442,
+   278,
    16,
    11
   ],
   "plants/mistflower/2": [
-   357,
-   238,
+   102,
+   261,
    16,
    15
   ],
   "plants/mistflower/3": [
-   374,
-   238,
+   119,
+   261,
    16,
    15
   ],
   "plants/passionvine/0": [
-   170,
+   371,
    208,
    16,
    27
   ],
   "plants/passionvine/1": [
-   187,
+   388,
    208,
    16,
    27
   ],
   "plants/passionvine/2": [
-   102,
+   303,
    208,
    16,
    28
   ],
   "plants/passionvine/3": [
-   119,
+   320,
    208,
    16,
    28
   ],
   "plants/pecan/0": [
-   187,
-   284,
+   442,
+   293,
    16,
    10
   ],
@@ -808,32 +862,32 @@
    77
   ],
   "plants/pepper/0": [
-   374,
-   284,
+   119,
+   305,
    16,
    9
   ],
   "plants/pepper/1": [
-   459,
-   255,
+   204,
+   278,
    16,
    12
   ],
   "plants/pepper/2": [
-   187,
-   255,
+   442,
+   261,
    16,
    14
   ],
   "plants/pepper/3": [
-   204,
-   255,
+   459,
+   261,
    16,
    14
   ],
   "plants/possumhaw/0": [
-   204,
-   284,
+   459,
+   293,
    16,
    10
   ],
@@ -856,182 +910,182 @@
    77
   ],
   "plants/radish/0": [
-   340,
-   271,
+   85,
+   293,
    16,
    11
   ],
   "plants/radish/1": [
-   102,
-   271,
+   357,
+   278,
    16,
    12
   ],
   "plants/radish/2": [
-   391,
-   255,
+   136,
+   278,
    16,
    13
   ],
   "plants/radish/3": [
-   255,
-   255,
+   0,
+   278,
    16,
    14
   ],
   "plants/scarletsage/0": [
-   493,
-   271,
+   238,
+   293,
    16,
    10
   ],
   "plants/scarletsage/1": [
-   170,
-   271,
+   425,
+   278,
    16,
    11
   ],
   "plants/scarletsage/2": [
-   323,
-   238,
+   68,
+   261,
    16,
    15
   ],
   "plants/scarletsage/3": [
-   340,
-   238,
+   85,
+   261,
    16,
    15
   ],
   "plants/seaoats/0": [
-   442,
-   284,
+   187,
+   305,
    16,
    8
   ],
   "plants/seaoats/1": [
-   170,
-   255,
+   425,
+   261,
    16,
    14
   ],
   "plants/seaoats/2": [
-   153,
-   238,
+   408,
+   241,
    16,
    16
   ],
   "plants/seaoats/3": [
-   170,
-   238,
+   425,
+   241,
    16,
    16
   ],
   "plants/spinach/0": [
-   323,
-   284,
+   68,
+   305,
    16,
    10
   ],
   "plants/spinach/1": [
-   340,
-   284,
+   85,
+   305,
    16,
    10
   ],
   "plants/spinach/2": [
-   51,
-   271,
+   306,
+   278,
    16,
    12
   ],
   "plants/spinach/3": [
-   68,
-   271,
+   323,
+   278,
    16,
    12
   ],
   "plants/squash/0": [
-   306,
-   271,
+   51,
+   293,
    16,
    11
   ],
   "plants/squash/1": [
-   85,
-   255,
+   340,
+   261,
    16,
    15
   ],
   "plants/squash/2": [
-   102,
-   255,
+   357,
+   261,
    16,
    15
   ],
   "plants/squash/3": [
-   238,
+   439,
    208,
    16,
    21
   ],
   "plants/turkscap/0": [
-   391,
-   271,
+   136,
+   293,
    16,
    10
   ],
   "plants/turkscap/1": [
-   272,
+   473,
    208,
    16,
    19
   ],
   "plants/turkscap/2": [
-   398,
-   158,
+   100,
+   208,
    16,
    31
   ],
   "plants/turkscap/3": [
-   298,
-   158,
+   0,
+   208,
    16,
    32
   ],
   "plants/txlantana/0": [
-   408,
-   271,
+   153,
+   293,
    16,
    10
   ],
   "plants/txlantana/1": [
-   289,
+   490,
    208,
    16,
    19
   ],
   "plants/txlantana/2": [
-   415,
-   158,
+   117,
+   208,
    16,
    31
   ],
   "plants/txlantana/3": [
-   315,
-   158,
+   17,
+   208,
    16,
    32
   ],
   "plants/txredbud/0": [
-   221,
-   284,
+   476,
+   293,
    16,
    10
   ],
   "plants/txredbud/1": [
-   466,
-   158,
+   168,
+   208,
    32,
    31
   ],
@@ -1048,68 +1102,68 @@
    79
   ],
   "plants/winecup/0": [
-   136,
-   284,
+   391,
+   293,
    16,
    10
   ],
   "plants/winecup/1": [
-   272,
-   271,
+   17,
+   293,
    16,
    11
   ],
   "plants/winecup/2": [
-   17,
-   255,
+   272,
+   261,
    16,
    15
   ],
   "plants/winecup/3": [
-   34,
-   255,
+   289,
+   261,
    16,
    15
   ],
   "plants/yaupon/0": [
-   102,
-   284,
+   357,
+   293,
    16,
    10
   ],
   "plants/yaupon/1": [
-   204,
-   238,
+   459,
+   241,
    16,
    16
   ],
   "plants/yaupon/2": [
-   408,
-   208,
+   102,
+   241,
    16,
    19
   ],
   "plants/yaupon/3": [
-   425,
-   208,
+   119,
+   241,
    16,
    19
   ],
   "tiles/grass": [
-   493,
-   208,
+   238,
+   241,
    16,
    16
   ],
   "tiles/grass_1": [
-   0,
-   238,
+   255,
+   241,
    16,
    16
   ],
   "tiles/grass_2": [
-   17,
-   238,
+   272,
+   241,
    16,
    16
   ]
@@ -1126,10 +1180,19 @@
    "grass_2"
   ]
  },
- "houseColors": [
+ "houseWalls": [
+  "brick",
+  "cream",
+  "white",
+  "barn_red",
+  "barn_teal",
+  "barn_yellow",
+  "barn_gray"
+ ],
+ "houseRoofs": [
+  "gray",
   "red",
-  "teal",
-  "yellow",
-  "gray"
+  "brown",
+  "metal"
  ]
 }

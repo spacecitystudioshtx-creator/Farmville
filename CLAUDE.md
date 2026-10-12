@@ -39,9 +39,13 @@ action also takes back its XP.
   in `assets/art/manifest.json` and shows in the app). Rebuild the atlas with
   `tools/slice_limezu.py`; commit only the atlas, never the pack's sheets.
   Natives without pack art are pack plants tinted to their real bloom color.
-  The house is assembled from LimeZu barn pieces (roof, repeating wall, corner
-  posts, a door where a path meets it) in four colors, chosen in Garden > More.
+  The house is assembled per column from a roof tile and a repeating wall unit
+  (window, trim, foundation), with corner posts and a door where a path meets
+  it. Walls (brick, cream/white siding from Modern Exteriors, four barn colors)
+  and roofs (gray shingle, red, brown, metal) are picked in Garden > More.
   The free Sprout Lands pack is non-commercial: don't commit its assets.
+- Plant shop has "New planting" (warnings + XP) and "Already in my yard"
+  (`YARD.addExisting`: full-grown, no warnings, no XP) plus a Trees filter.
 
 ## Test
 ```bash

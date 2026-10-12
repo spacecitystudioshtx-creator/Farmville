@@ -15,10 +15,17 @@ python3 tools/slice_limezu.py --sheets /path/to/sheets --out assets/art
   pack art use a pack plant tinted to the species' bloom color from `js/plants.js`.
 - Only the atlas is committed. LimeZu's license allows editing and commercial use
   with credit, not redistributing the pack.
-- The house is built from the big barn (`barn_<color>.png`, 4 colors): metal
-  roof tiles, a repeating wall with windows, corner posts, and a door wherever a
-  path meets the house (`drawHouses` in `js/sprites.js`), so any painted
-  footprint works.
+- The house is drawn per column (`drawHouses` in `js/sprites.js`): a roof tile
+  above a repeating wall unit, corner posts, and a door wherever a path meets
+  the house, so any painted footprint works. Styles are picked in
+  Garden > More:
+  - Walls: `brick`, `cream`, `white` (built from Modern Exteriors tiles by
+    `wall_unit()` in the slicer: trim, texture, centered window, foundation)
+    and `barn_<color>` from the big barn sheets.
+  - Roofs: `gray` shingle, `red`, `brown` (Modern Exteriors) and `metal` (barn).
+  - Modern Exteriors input: the RPG Maker MV sheets are 3x the 16px art; copy
+    `Tileset_13/14/150/155_MV.png` as `me_13.png` etc. and the slicer
+    downsamples them. Crop boxes are `ME_*` constants in the slicer.
 
 
 ## Sprout Lands (the chosen direction)

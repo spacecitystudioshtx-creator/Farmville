@@ -175,6 +175,12 @@
       state.plants[key(x, y)] = newRecord(id, todayStr(), todayStr());
       this.log('planted', id, key(x, y));
     },
+    // a plant that already grows in the yard: full-grown, rain-fed, no history of planting
+    addExisting(x, y, id) {
+      const def = window.PLANT_BY_ID[id];
+      state.plants[key(x, y)] = newRecord(id, todayStr(-Math.max(400, def.establishDays + 30)), null);
+      this.log('added', id, key(x, y));
+    },
     removePlant(x, y) { delete state.plants[key(x, y)]; },
     markDied(x, y, cause) {
       const rec = this.plantAt(x, y);

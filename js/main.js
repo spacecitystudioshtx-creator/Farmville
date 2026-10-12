@@ -15,14 +15,14 @@
 
   // ---------- preferences ----------
   const PREF_KEY = 'gardenstar-ui-v1';
-  let prefs = { welcomed: false, shade: false, tipsSeen: false, houseColor: 'red' };
+  let prefs = { welcomed: false, shade: false, tipsSeen: false, houseWall: 'brick', houseRoof: 'gray' };
   try { Object.assign(prefs, JSON.parse(localStorage.getItem(PREF_KEY) || '{}')); } catch (e) { /* private mode */ }
   function savePrefs() { try { localStorage.setItem(PREF_KEY, JSON.stringify(prefs)); } catch (e) { /* ignore */ } }
 
   const ui = {
     tool: 'look', plantId: null, terrain: 'soil',
     selected: null, hover: null, highlight: null, highlightUntil: 0,
-    weather: null, sheet: null, shopFilter: 'season', shopQuery: '', gardenTab: 'report',
+    weather: null, sheet: null, shopFilter: 'season', shopQuery: '', gardenTab: 'report', plantMode: 'new',
   };
 
   // ---------- camera ----------
@@ -321,6 +321,14 @@
     const rec = Y.plantAt(t.x, t.y);
     if (rec) { toast(`That spot has a ${esc(window.PLANT_BY_ID[rec.id].name)}. Dig it up first, or pick an empty tile.`); return; }
     if (!Y.isPlantable(t.x, t.y)) { toast('Plants go on lawn or garden beds. Use Build to make a bed here.'); return; }
+    if (ui.plantMode === 'existing') {
+      snapshot();
+      Y.addExisting(t.x, t.y, def.id);
+      ui.selected = t;
+      toast(`Added your ${esc(def.name)}. Tap it any time for its care card.`);
+      persist();
+      return;
+    }
     const warnings = C.plantingWarnings(def, t.x, t.y);
     if (warnings.length) {
       const go = await dialog(
@@ -493,7 +501,8 @@
     let html = '';
     if (ui.tool === 'plant' && ui.plantId) {
       const def = window.PLANT_BY_ID[ui.plantId];
-      html = `${swatchImg(def, 'chip-sw')}<span class="chip-text"><b>${esc(def.name)}</b><br><span class="small muted">Tap a bed or lawn tile to plant</span></span><button class="btn alt" id="chip-change">Change</button>`;
+      const hint = ui.plantMode === 'existing' ? 'Tap where it grows in your yard' : 'Tap a bed or lawn tile to plant';
+      html = `${swatchImg(def, 'chip-sw')}<span class="chip-text"><b>${esc(def.name)}</b><br><span class="small muted">${hint}</span></span><button class="btn alt" id="chip-change">Change</button>`;
     } else if (ui.tool === 'water') {
       html = `${I.html('water')}<span class="chip-text"><b>Water</b><br><span class="small muted">After watering for real, tap the plant to log it</span></span>`;
     } else if (ui.tool === 'build') {
@@ -580,6 +589,7 @@
     if (ui.shopFilter === 'native') list = list.filter(p => p.native);
     if (ui.shopFilter === 'wildlife') list = list.filter(p => p.wildlife.length);
     if (ui.shopFilter === 'edible') list = list.filter(p => p.type === 'edible');
+    if (ui.shopFilter === 'tree') list = list.filter(p => p.type === 'tree' || (p.type === 'shrub' && p.heightFt >= 8));
     if (q) list = list.filter(p => (p.name + ' ' + p.botanical + ' ' + p.wildlife.join(' ')).toLowerCase().includes(q));
     const score = p => (p.plantMonths.includes(m) ? 0 : 2) + (p.native ? 0 : 1);
     return list.sort((a, b) => score(a) - score(b) || a.name.localeCompare(b.name));
@@ -595,11 +605,15 @@
   }
   const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
   function renderShop() {
-    const filters = [['season', 'Plant now'], ['native', 'Natives'], ['wildlife', 'Wildlife'], ['edible', 'Edibles'], ['all', 'All']];
+    const filters = [['season', 'Plant now'], ['tree', 'Trees'], ['native', 'Natives'], ['wildlife', 'Wildlife'], ['edible', 'Edibles'], ['all', 'All']];
     const list = shopList();
     return {
       title: 'Plant shop',
-      html: `<div class="chips">${filters.map(([k, l]) => `<button data-f="${k}" class="${ui.shopFilter === k ? 'active' : ''}">${l}</button>`).join('')}</div>
+      html: `<div class="seg"><button data-mode="new" class="${ui.plantMode === 'new' ? 'active' : ''}">New planting</button><button data-mode="existing" class="${ui.plantMode === 'existing' ? 'active' : ''}">Already in my yard</button></div>
+        <p class="small muted">${ui.plantMode === 'existing'
+          ? 'Map what already grows in your yard. It goes in full-grown, with no planting XP.'
+          : 'Natives in season earn the most XP.'}</p>
+        <div class="chips">${filters.map(([k, l]) => `<button data-f="${k}" class="${ui.shopFilter === k ? 'active' : ''}">${l}</button>`).join('')}</div>
         <input class="search" id="shop-q" type="search" placeholder="Search plants, or try &quot;butterflies&quot;" value="${esc(ui.shopQuery)}">
         <div class="list">${list.map(p => `<div class="item" data-pick="${p.id}" role="button" tabindex="0">
           ${swatchImg(p)}
@@ -609,6 +623,11 @@
           <button class="info" data-info="${p.id}" aria-label="About ${esc(p.name)}">i</button></div>`).join('') || '<p class="muted">No plants match. Try All.</p>'}</div>`,
       bind(body) {
         body.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { ui.shopFilter = b.dataset.f; renderSheet(true); });
+        body.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => {
+          ui.plantMode = b.dataset.mode;
+          if (ui.plantMode === 'existing' && ui.shopFilter === 'season') ui.shopFilter = 'all';
+          renderSheet(false);
+        });
         const qi = body.querySelector('#shop-q');
         qi.oninput = () => { ui.shopQuery = qi.value; const pos = qi.selectionStart; renderSheet(false); const n = $('shop-q'); n.focus(); n.setSelectionRange(pos, pos); };
         body.querySelectorAll('[data-info]').forEach(b => b.onclick = e => { e.stopPropagation(); openSheet('info', { id: b.dataset.info }); });
@@ -813,6 +832,7 @@
     const name = id => (window.PLANT_BY_ID[id] ? window.PLANT_BY_ID[id].name : '');
     const line = j => ({
       planted: `Planted ${esc(name(j.plantId))}`,
+      added: `Mapped your existing ${esc(name(j.plantId))}`,
       died: `Lost ${esc(name(j.plantId))}${j.text ? ' (' + esc(j.text) + ')' : ''}`,
       note: `<b>${esc(name(j.plantId))}:</b> ${esc(j.text)}`,
       harvest: esc(j.text),
@@ -826,10 +846,22 @@
     };
   }
 
+  const WALL_NAMES = { brick: 'Brick', cream: 'Cream siding', white: 'White siding', barn_red: 'Red barn', barn_teal: 'Teal barn', barn_yellow: 'Yellow barn', barn_gray: 'Gray barn' };
+  const ROOF_NAMES = { gray: 'Gray shingle', red: 'Red', brown: 'Brown', metal: 'Metal' };
+  function houseStylePicker() {
+    const walls = window.ART.houseWalls(), roofs = window.ART.houseRoofs();
+    if (!walls.length) return '';
+    const st = window.ART.houseStyle();
+    const chips = (list, names, cur, attr) => `<div class="chips" style="margin-top:6px">${list.map(v => `<button data-${attr}="${v}" class="${cur === v ? 'active' : ''}">${names[v] || cap(v)}</button>`).join('')}</div>`;
+    return `<div class="card"><h3>Your house</h3><p class="small">Pick the closest match to your real house.</p>
+      <div class="section-title" style="margin-top:8px">Walls</div>${chips(walls, WALL_NAMES, st.wall, 'hwall')}
+      <div class="section-title" style="margin-top:8px">Roof</div>${chips(roofs, ROOF_NAMES, st.roof, 'hroof')}</div>`;
+  }
+
   function gardenMore() {
     const credit = window.ART.creditLine();
     return {
-      html: `${window.ART.houseColors().length ? `<div class="card"><h3>House color</h3><div class="chips" style="margin-top:6px">${window.ART.houseColors().map(c => `<button data-house="${c}" class="${window.ART.houseColor() === c ? 'active' : ''}">${cap(c)}</button>`).join('')}</div></div>` : ''}
+      html: `${houseStylePicker()}
         <div class="card"><h3>Share</h3><p class="small">Save a picture of your pixel yard.</p><div class="row" style="margin-top:8px"><button class="btn" id="m-share">Save yard picture</button></div></div>
         <div class="card"><h3>Describe your yard to Claude</h3><p class="small">Chat about your real yard and Claude builds the map for you.</p><div class="row" style="margin-top:8px"><button class="btn alt" id="m-interview">Start interview</button></div></div>
         <div class="card"><h3>Backup</h3><p class="small">Copy your garden to keep it safe or move it to another device.</p>
@@ -838,9 +870,11 @@
         ${MON.supportUrl ? `<a class="btn gold block" target="_blank" rel="noopener" href="${esc(MON.supportUrl)}">Support GardenStar</a>` : ''}
         <p class="small muted">GardenStar test flight. Prototype garden: ${esc(window.SITE.address)} (USDA zone ${window.SITE.usdaZone}). Plant data: Gulf Coast natives and the Harris County planting calendar. Weather: Open-Meteo.${credit ? ' ' + esc(credit) + '.' : ''} Not affiliated with FarmVille or Zynga.</p>`,
       bind(body) {
-        body.querySelectorAll('[data-house]').forEach(b => b.onclick = () => {
-          prefs.houseColor = b.dataset.house; savePrefs();
-          window.ART.setHouseColor(prefs.houseColor);
+        body.querySelectorAll('[data-hwall], [data-hroof]').forEach(b => b.onclick = () => {
+          if (b.dataset.hwall) prefs.houseWall = b.dataset.hwall;
+          if (b.dataset.hroof) prefs.houseRoof = b.dataset.hroof;
+          savePrefs();
+          window.ART.setHouseStyle(prefs.houseWall, prefs.houseRoof);
           requestDraw(true); renderSheet(false);
         });
         $('m-share').onclick = shareYard;
@@ -1017,7 +1051,7 @@
   refreshHUD();
 
   window.ART.init(() => {
-    window.ART.setHouseColor(prefs.houseColor);
+    window.ART.setHouseStyle(prefs.houseWall, prefs.houseRoof);
     Object.keys(swatchCache).forEach(k => delete swatchCache[k]);
     requestDraw(true); refreshSheet(); renderModeChip();
   });
