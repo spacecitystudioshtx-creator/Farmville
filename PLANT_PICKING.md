@@ -1,9 +1,10 @@
 # 🌱 What should I plant? How GardenStar decides
 
 The plant shop is sorted the way a good local gardener would answer "what
-should I plant?" for *your* yard, today. It doesn't sort A to Z. This page is
-the plan behind that: how real home gardeners decide, then how the app turns
-each step into a score.
+should I plant?" for *your* yard, today: things you can actually buy this
+weekend, that go in the ground now, in light you actually have. It doesn't
+sort A to Z. This page is the plan behind that: how real home gardeners decide,
+then how the app turns each step into a score.
 
 ## How real home gardeners decide
 
@@ -42,8 +43,10 @@ moves it up or down.
    deadheading), and experience. **Perennial or annual** is a time and budget
    decision: perennials come back every year, while annuals give one season of
    food or color and get replanted.
-7. **Practical limits:** budget, HOA rules, pets and kids (toxic plants), and
-   what local nurseries carry.
+7. **Can I buy it?** Most people buy plants where they buy everything else:
+   the Home Depot or Lowe's garden center, a seed rack, or Amazon. A great plant
+   that only a native nursery stocks is a weekend errand, not an impulse buy.
+8. **Practical limits:** budget, HOA rules, and pets and kids (toxic plants).
 
 ## How the app turns that into a ranking
 
@@ -52,14 +55,15 @@ Code: `gardenContext`, `scorePlant` and `rankPlants` in `js/care.js`. Data:
 
 | Step | What the app knows | Score |
 |---|---|---|
-| 1. Survives here | Every plant in the 41-plant catalog is picked for Houston | not scored: a filter, not a rank |
+| 1. Survives here | Every plant in the 52-plant catalog is picked for Houston | not scored: a filter, not a rank |
 | 2. Right time | Planting months for each plant (Harris County calendar, native-plant guides) | **+40** in its window now ("Plant now", or "Last month to plant"), +15 next month, +5 in two months. Otherwise the plant shows "Plant Mar–May" |
-| 3. Right light | Shade map from your trees, and the light range each plant tolerates | Whole yard: up to **+20** by how much of your open lawn and beds suits it, **−50** if nothing open does. A spot you tapped: **+25** (+8 if it's the plant's favorite light), **−60** if the light is wrong |
+| 3. Right light | Growing-season sun hours for every tile, traced from the sun's real path over your address with your house, fences and trees (`js/sun.js`), and the light range each plant tolerates | Whole yard: up to **+20** by how much of your open lawn and beds suits it, **−50** if nothing open does. A spot you tapped: **+25** (+8 if it's the plant's favorite light), **−60** if the light is wrong |
 | 3. Room | House tiles and your trees | Big trees (30 ft+) need a spot 15 ft from the house and other trees. Small trees (redbud, plum, possumhaw) need 9 ft from the house. **−35 to −40** if there's no such spot |
 | 4. Goals | Native, wildlife, host plants, food | Native **+12**. Caterpillar host **+10**. First plant for butterflies, hummingbirds, bees or birds **+6** (+2 if you already have one). Food in season **+8**, up to +12 more the more of your garden is edible |
 | 5. What's missing | Bloom months of everything you've planted | **+3** for each month it blooms when nothing else does (max +15) |
 | 6. Ease | Water needs | Low water **+6**, high water **−4** |
 | 6. Variety | What you already have | **−5** for each one you already have (max −20) |
+| 7. Can I buy it | Where each plant is usually sold in Houston (`buy` in `js/plants.js`) | Big-box garden centers (Home Depot, Lowe's) **+18**. Seed packet (racks, Amazon) **+10**. Native nurseries only **−10** |
 
 Ties sort A to Z. Each plant in the shop shows its top three reasons in green
 and its biggest drawback in rust, so the list explains itself, the way an
@@ -80,13 +84,15 @@ watering), so a good suggestion and a reward always agree.
 The yard has a pecan, a live oak, a yaupon, Turk's cap and muhly. It has no
 bee plants and nothing blooming in March or April. Top of the list:
 
-1. **Frogfruit:** last month to plant, fits the part-shade spots, caterpillar
-   host for phaon crescents and buckeyes.
-2. **Autumn Sage:** plant now, first plant for bees, fills the March–April gap.
-3. **Mealy Blue Sage:** same reasons, and its last month to plant.
-4. **Mexican Plum** and **Texas Redbud:** fall is tree season, and both are
-   small understory trees that fit the part shade and feed early bees.
-5. **Winecup**, **Indian Blanket**, **Purple Coneflower**, **Black-eyed Susan**.
+1. **Autumn Sage:** plant now, sold at Home Depot and Lowe's, first plant
+   for bees, fills the March–April gap.
+2. **Mealy Blue Sage:** same reasons, and its last month to plant.
+3. **Texas Redbud:** fall is tree season. It's a small understory tree that
+   fits the part shade, and big-box stores carry it.
+4. **Purple Coneflower**, **Black-eyed Susan**, **Coral Honeysuckle**,
+   **Rosemary**.
+
+Frogfruit, a fine native that only native nurseries sell, sits mid-list.
 
 Cool-season vegetables (garlic, lettuce, kale, carrots) are in season and sit
 in the middle. Spring crops (tomatoes, squash, cucumbers) sink to the bottom
@@ -98,10 +104,8 @@ matches what a Houston nursery would hand you for dry shade.
 
 These are listed by how much they'd change the answer:
 
-1. **Shade from the house, and which way the lot faces.** The shade map only
-   counts trees, but the north side of a house is shady most of the year.
-   Fix: ask "which way does your front door face?" and cast the house's
-   shadow from the sun's angle (the live-sun idea in the Build Guide).
+1. **Live inventory.** "Sold at Home Depot" means typical seasonal stock, not
+   what's on the shelf today. Fix: link each plant to a store search.
 2. **Your goals.** Today they're inferred only from what you've planted (more
    edibles means food ranks higher). Fix: a three-chip picker at the start
    (Food / Flowers and wildlife / Low maintenance).
@@ -111,7 +115,11 @@ These are listed by how much they'd change the answer:
 4. **Room in a specific bed.** The crowding warning checks neighbors at
    planting time, but the ranking doesn't yet.
 5. **Budget, HOA, pets, and what the nursery has.**
-6. **Catalog size.** The ranking can only pick from the 41 plants it has.
+6. **Catalog size.** The ranking can only pick from the 52 plants it has.
+
+House shade is no longer a gap: tell the house builder which way your front
+door faces, and sun hours come from the sun's real path past your house,
+fences and trees.
 
 ## Changing it
 

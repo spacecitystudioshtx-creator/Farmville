@@ -8,12 +8,14 @@
     journal: [],   // newest last: { date, type, plantId, key, text }
     lost: [],      // plants marked as died: { id, planted, died, cause }
     home: null,    // house style + builder plan, see HOME_DEFAULT
+    fences: {},    // "x,y" -> 1: fence pieces the player built
   };
 
   // House look (drawn by SPRITES.drawHouses) and the builder's plan: which
   // preset shape sits where, and the tiles it set (so moving it can put the
   // lawn back). A painted house has plan null.
-  const HOME_DEFAULT = { wall: 'brick', roof: 'gray', door: 'wood', stories: 1, chimney: false, boxes: '', pots: false, plan: null };
+  // facing: compass direction the front door faces (sets where the sun and shadows fall)
+  const HOME_DEFAULT = { wall: 'brick', roof: 'gray', door: 'wood', stories: 1, chimney: false, boxes: '', pots: false, facing: 'S', plan: null };
   function normalizeHome(h) {
     if (!h) { // saves from before houses lived in the garden: take the old UI prefs
       h = {};
@@ -48,6 +50,7 @@
     state.journal = [];
     state.lost = [];
     state.home = normalizeHome({});
+    state.fences = {};
   }
 
   // ---------- lot shapes ----------
@@ -65,6 +68,7 @@
     narrow: { name: 'Narrow and deep', desc: 'A city lot, half as wide', inLot: x => x >= 10 && x < 30 },
     wide: { name: 'Wide and shallow', desc: 'Lots of frontage, a small back yard', inLot: (x, y) => y >= 9 },
     angled: { name: 'Angled back', desc: 'The back fence runs on a slant', inLot: (x, y) => y >= Math.round(10 * (1 - x / (W - 1))) },
+    draw: { name: 'Draw my own', desc: 'Start empty and drag out your lot', inLot: () => false },
   };
   function lotTerrain(id, x, y) {
     const lot = LOTS[id] || LOTS.standard;
@@ -74,6 +78,7 @@
   function applyLot(id) {
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) state.terrain[y][x] = lotTerrain(id, x, y);
     state.plants = {};
+    state.fences = {};
   }
 
   // ---------- house builder ----------
@@ -156,22 +161,31 @@
       else tiles[k][1] = type;
       state.terrain[y][x] = type;
       delete state.plants[k];
+      delete state.fences[k];
     }
     home.plan = { shape: plan.shape, garage: plan.garage, x: plan.x, y: plan.y, tiles };
   }
 
+  // plants a stamp would cover (the builder refuses rather than bulldoze them)
+  function planConflicts(plan) {
+    return planTiles(plan).filter(([x, y]) => state.plants[key(x, y)]).map(([x, y]) => key(x, y))
+      .filter((k, i, a) => a.indexOf(k) === i);
+  }
+
   // centered on the lot, front wall ~7 tiles (21 ft) back from the street
+  // (or from the front of a lot drawn short of it)
   function defaultPlan(shape, garage) {
     const fp = footprint({ shape, garage });
     const [bx, by, bw, bh] = fp.box;
-    let street = H;
-    const cx = Math.floor(W / 2);
-    for (let y = 0; y < H; y++) if (state.terrain[y][cx] === 'street') { street = y; break; }
-    const front = Math.max(bh, street - 8);
-    const row = Math.max(0, front - 1);
-    let l = 0, r = W - 1;
-    while (l < W - 1 && state.terrain[row][l] !== 'grass') l++;
-    while (r > 0 && state.terrain[row][r] !== 'grass') r--;
+    let l = W, r = -1, t = H, b = -1, street = H;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const v = state.terrain[y][x];
+      if (v === 'street') { if (x === Math.floor(W / 2)) street = Math.min(street, y); continue; }
+      if (v === 'offlot') continue;
+      l = Math.min(l, x); r = Math.max(r, x); t = Math.min(t, y); b = Math.max(b, y);
+    }
+    if (r < 0) { l = 0; r = W - 1; t = 0; b = street - 1; }
+    const front = Math.max(t + bh, Math.min(street - 8, b - 5));
     const x = Math.round((l + r + 1) / 2 - bw / 2) - bx;
     return clampPlan({ shape, garage, x, y: front - bh - by });
   }
@@ -221,7 +235,7 @@
   }
 
   function serialize() {
-    return JSON.stringify({ v: 2, terrain: state.terrain, plants: state.plants, journal: state.journal, lost: state.lost, home: state.home });
+    return JSON.stringify({ v: 2, terrain: state.terrain, plants: state.plants, journal: state.journal, lost: state.lost, home: state.home, fences: state.fences });
   }
 
   function restore(data) {
@@ -234,6 +248,7 @@
     state.journal = data.journal || [];
     state.lost = data.lost || [];
     state.home = normalizeHome(data.home);
+    state.fences = data.fences || {};
   }
 
   function save() {
@@ -273,8 +288,10 @@
     return stage === 0 ? 0 : stage === 1 ? 1 : full;
   }
 
-  // 'full' | 'part' | 'shade', plus the tree casting it
+  // 'full' | 'part' | 'shade', plus what casts it. With sun.js loaded this is
+  // traced from the real sun path; the fallback below only knows tree canopies.
   function sunAt(x, y) {
+    if (window.SUN) return window.SUN.at(x, y);
     let best = { level: 'full', by: null };
     for (const [k, rec] of Object.entries(state.plants)) {
       const r = canopyRadius(rec);
@@ -299,7 +316,7 @@
 
   window.YARD = {
     W, H, state, key, todayStr, daysSince, growthStage, STAGE_NAMES,
-    LOTS, HOUSE_SHAPES, applyLot, lotTerrain, footprint, stampHome, defaultPlan, clampPlan,
+    LOTS, HOUSE_SHAPES, applyLot, lotTerrain, footprint, stampHome, planConflicts, defaultPlan, clampPlan,
     buildDefaultLayout, emptyLot, save, load, serialize, restore, sunAt, canopyRadius,
     checkpoint,
     canUndo() { return undoStack.length > 0; },
@@ -315,11 +332,31 @@
     plantAt(x, y) { return state.plants[key(x, y)]; },
     isPlantable(x, y) { return !!plantableTerrain[this.terrainAt(x, y)]; },
     inLot(x, y) { const t = this.terrainAt(x, y); return t != null && t !== 'offlot' && t !== 'street'; },
-    canPlantAt(x, y) { return this.isPlantable(x, y) && !this.plantAt(x, y); },
+    canPlantAt(x, y) { return this.isPlantable(x, y) && !this.plantAt(x, y) && !this.fenceAt(x, y); },
+    // never paves over a plant: returns 'blocked' so the brush can say so
     setTerrain(x, y, type) {
       if (state.terrain[y][x] === type) return false;
+      if (!plantableTerrain[type] && state.plants[key(x, y)]) return 'blocked';
       state.terrain[y][x] = type;
-      if (!plantableTerrain[type]) delete state.plants[key(x, y)];
+      if (type === 'house' || type === 'street') delete state.fences[key(x, y)];
+      return true;
+    },
+    fenceAt(x, y) { return !!state.fences[key(x, y)]; },
+    setFence(x, y, on) {
+      const k = key(x, y);
+      if (!!state.fences[k] === on) return false;
+      if (on && state.plants[k]) return 'blocked';
+      if (on && (!this.inLot(x, y) || state.terrain[y][x] === 'house')) return false;
+      if (on) state.fences[k] = 1; else delete state.fences[k];
+      return true;
+    },
+    // moves a plant with its whole history (planted date, notes, harvests)
+    movePlant(from, to) {
+      const rec = this.plantAt(from.x, from.y);
+      if (!rec || !this.canPlantAt(to.x, to.y) || !this.inLot(to.x, to.y)) return false;
+      delete state.plants[key(from.x, from.y)];
+      state.plants[key(to.x, to.y)] = rec;
+      this.log('moved', rec.id, key(to.x, to.y));
       return true;
     },
     addPlant(x, y, id) {

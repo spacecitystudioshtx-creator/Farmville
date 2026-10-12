@@ -77,8 +77,51 @@
   let worldDirty = true, drawQueued = false, shadeGrid = null;
   const floaters = [];
 
+  // Shadows for the sun's real position (now, or the hour on the sun slider):
+  // the house and fences swept along the shadow direction, tree crowns as
+  // offset disks. Drawn on one layer so overlaps don't double up.
+  const shadowLayer = document.createElement('canvas');
+  shadowLayer.width = world.width; shadowLayer.height = world.height;
+  function drawShadows(target) {
+    const sh = window.SUN && window.SUN.shadowsAt(ui.sunHour);
+    if (!sh) return;
+    const sc = shadowLayer.getContext('2d');
+    sc.setTransform(1, 0, 0, 1, 0, 0);
+    sc.clearRect(0, 0, shadowLayer.width, shadowLayer.height);
+    sc.fillStyle = '#0b1630';
+    const house = new Path2D(), fence = new Path2D();
+    for (const [x, y] of Y.houseTiles()) house.rect(x * T, y * T, T, T);
+    for (const k of Object.keys(Y.state.fences)) {
+      const [x, y] = k.split(',').map(Number);
+      if (Y.fenceAt(x - 1, y) || Y.fenceAt(x + 1, y) || !(Y.fenceAt(x, y - 1) || Y.fenceAt(x, y + 1))) fence.rect(x * T, y * T + T * 0.4, T, T * 0.2);
+      else fence.rect(x * T + T * 0.4, y * T, T * 0.2, T);
+    }
+    const sweep = (path, feet) => {
+      const len = Math.min(30 * T, feet * sh.perFoot * T), steps = Math.max(1, Math.ceil(len / 3));
+      for (let i = 0; i <= steps; i++) { sc.setTransform(1, 0, 0, 1, sh.away.x * len * i / steps, sh.away.y * len * i / steps); sc.fill(path); }
+      sc.setTransform(1, 0, 0, 1, 0, 0);
+    };
+    sweep(house, (Y.state.home.stories || 1) >= 2 ? 24 : 14);
+    sweep(fence, 6);
+    for (const p of Y.allPlants()) {
+      if (p.def.type !== 'tree') continue;
+      const r = Y.canopyRadius(p.rec) * 0.85 * T;
+      if (!r) continue;
+      const h = p.def.heightFt * (Y.growthStage(p.rec) >= 2 ? 1 : 0.45);
+      const off = Math.min(30 * T, h * 0.65 * sh.perFoot * T);
+      sc.beginPath();
+      sc.ellipse((p.x + 0.5) * T + sh.away.x * off, (p.y + 0.5) * T + sh.away.y * off, r, r * 0.9, 0, 0, Math.PI * 2);
+      sc.fill();
+    }
+    target.save();
+    target.globalAlpha = 0.28;
+    target.drawImage(shadowLayer, 0, 0);
+    target.restore();
+  }
+
   function renderWorld() {
     for (let y = 0; y < Y.H; y++) for (let x = 0; x < Y.W; x++) S.drawTerrain(wctx, Y.terrainAt(x, y), x, y);
+    drawShadows(wctx);
     S.drawHouses(wctx);
     // fence along the lot line: lawn tiles next to a neighbor or the map edge
     // (the street side stays open)
@@ -87,6 +130,13 @@
       if (Y.terrainAt(x, y) !== 'grass') continue;
       if (outside(x, y - 1) || outside(x, y + 1)) S.drawFence(wctx, x, y, false);
       else if (outside(x - 1, y) || outside(x + 1, y)) S.drawFence(wctx, x, y, true);
+    }
+    // built fences join up with their neighbors
+    for (const k of Object.keys(Y.state.fences)) {
+      const [x, y] = k.split(',').map(Number);
+      const h = Y.fenceAt(x - 1, y) || Y.fenceAt(x + 1, y), v = Y.fenceAt(x, y - 1) || Y.fenceAt(x, y + 1);
+      if (h || !v) S.drawFence(wctx, x, y, false);
+      if (v) S.drawFence(wctx, x, y, true);
     }
     const plants = Y.allPlants().sort((a, b) => a.y - b.y);
     for (const p of plants) if (p.def.type !== 'tree') S.drawPlant(wctx, p.def, p.x, p.y, Y.growthStage(p.rec));
@@ -137,10 +187,27 @@
       ctx.strokeStyle = ok ? '#ffe066' : '#ff6b5a';
       ctx.lineWidth = 2 / cam.s * 1.5;
       ctx.strokeRect(x * T + 1, y * T + 1, T - 2, T - 2);
+    } else if (ui.tool === 'build' && ui.boxRect) {
+      const b = ui.boxRect, x = Math.min(b.x0, b.x1), y = Math.min(b.y0, b.y1);
+      const w = Math.abs(b.x1 - b.x0) + 1, h = Math.abs(b.y1 - b.y0) + 1;
+      ctx.fillStyle = 'rgba(255,224,102,0.25)';
+      if (ui.terrain !== 'fence') ctx.fillRect(x * T, y * T, w * T, h * T);
+      ctx.strokeStyle = '#ffe066';
+      ctx.lineWidth = 3 / cam.s;
+      ctx.strokeRect(x * T + 1, y * T + 1, w * T - 2, h * T - 2);
     } else if (ui.tool === 'build' && ui.hover) {
       ctx.strokeStyle = '#ffe066';
       ctx.lineWidth = 3 / cam.s;
       ctx.strokeRect(ui.hover.x * T + 1, ui.hover.y * T + 1, T - 2, T - 2);
+    }
+
+    if (ui.tool === 'build' && ui.moving) { // what's being moved
+      ctx.strokeStyle = '#7fd4ff';
+      ctx.lineWidth = 3 / cam.s;
+      const tiles = ui.moving.kind === 'house' ? Y.houseTiles() : [[ui.moving.from.x, ui.moving.from.y]];
+      ctx.setLineDash([6 / cam.s, 4 / cam.s]);
+      for (const [x, y] of tiles) ctx.strokeRect(x * T + 2, y * T + 2, T - 4, T - 4);
+      ctx.setLineDash([]);
     }
 
     if (ui.highlight && now < ui.highlightUntil) {
@@ -299,10 +366,11 @@
       banner(`<div class="medal">${iconFor(e.badge.icon)}</div><small>Badge unlocked</small><strong>${esc(e.badge.name)}</strong><span>${esc(e.badge.desc)} · +${G.XP.badge} XP</span>`);
       Y.log('badge', null, null, `Badge: ${e.badge.name}`);
     }
-    if (e.type === 'quest') toast(`Quest complete: ${esc(e.quest.title)} <b>+${e.quest.xp} XP</b>`);
+    if (e.type === 'quest') toast(`Done: ${esc(e.quest.title)} <b>+${e.quest.xp} XP</b>`);
   });
 
   function persist() {
+    syncCompass();
     Y.save();
     G.syncQuests(ui.weather);
     G.save();
@@ -367,27 +435,92 @@
     if (rec) { openSheet('plant', { x: t.x, y: t.y }); return; }
     const terr = Y.terrainAt(t.x, t.y);
     const sun = Y.sunAt(t.x, t.y);
-    const by = sun.by ? ` from your ${window.PLANT_BY_ID[sun.by.id].name}` : '';
+    const by = (sun.by ? ` from ${C.shadeFrom(sun.by)}` : '') + (sun.hours != null ? ` (~${Math.round(sun.hours)} h of sun)` : '');
     const hint = Y.isPlantable(t.x, t.y) && Y.inLot(t.x, t.y) ? ' Tap Plant for the best picks for this spot.'
       : terr === 'house' ? ' Garden > More > Your house to change it.' : '';
     toast(`<b>${terrainNames[terr]}</b> · ${sunWords[sun.level]}${esc(by)}.${hint}`);
   }
 
+  // one brush dab. Brushes never pave over a plant: they skip it and say so.
+  function paintTile(x, y, brush) {
+    let r = false;
+    if (brush === 'dig') {
+      if (Y.plantAt(x, y)) { Y.removePlant(x, y); r = true; } else r = Y.setFence(x, y, false);
+    } else if (brush === 'fence') r = Y.setFence(x, y, true);
+    else r = Y.setTerrain(x, y, brush);
+    if (r === 'blocked') { stroke.skipped++; return false; }
+    return r;
+  }
   function paintAt(t) {
     if (!t || (stroke.last && stroke.last.x === t.x && stroke.last.y === t.y)) return;
     stroke.last = t;
-    let changed = false;
-    if (ui.terrain === 'dig') {
-      if (Y.plantAt(t.x, t.y)) { Y.removePlant(t.x, t.y); changed = true; }
-    } else changed = Y.setTerrain(t.x, t.y, ui.terrain);
-    if (changed) { stroke.changed = true; requestDraw(true); }
+    if (paintTile(t.x, t.y, ui.terrain)) { stroke.changed = true; requestDraw(true); }
   }
-  const stroke = { active: false, last: null, changed: false };
-  function startStroke(t) { stroke.active = true; stroke.last = null; stroke.changed = false; snapshot(); paintAt(t); }
+  const stroke = { active: false, last: null, changed: false, skipped: 0 };
+  function startStroke(t) {
+    stroke.active = true; stroke.last = null; stroke.changed = false; stroke.skipped = 0;
+    snapshot();
+    if (ui.box) { ui.boxRect = t ? { x0: t.x, y0: t.y, x1: t.x, y1: t.y } : null; requestDraw(); }
+    else paintAt(t);
+  }
+  // box mode: fill the rectangle, or for fences draw its outline
+  function fillBox() {
+    const b = ui.boxRect;
+    ui.boxRect = null;
+    if (!b) return;
+    const [xa, xb] = [Math.min(b.x0, b.x1), Math.max(b.x0, b.x1)], [ya, yb] = [Math.min(b.y0, b.y1), Math.max(b.y0, b.y1)];
+    for (let y = ya; y <= yb; y++) for (let x = xa; x <= xb; x++) {
+      if (ui.terrain === 'fence' && x !== xa && x !== xb && y !== ya && y !== yb) continue;
+      if (paintTile(x, y, ui.terrain)) stroke.changed = true;
+    }
+  }
   function endStroke() {
     if (!stroke.active) return;
     stroke.active = false;
-    if (stroke.changed) persist(); else { Y.dropCheckpoint(); refreshHUD(); }
+    if (ui.box) fillBox();
+    if (stroke.changed) persist(); else { Y.dropCheckpoint(); refreshHUD(); requestDraw(); }
+    if (stroke.skipped) toast(`Left ${stroke.skipped} plant${stroke.skipped === 1 ? '' : 's'} alone. Use <b>Move</b> or <b>Dig up</b> first.`);
+  }
+
+  // Move: tap a plant (or the house), then tap where it goes
+  function moveTap(t) {
+    const m = ui.moving;
+    if (!m) {
+      const rec = Y.plantAt(t.x, t.y);
+      if (rec) { ui.moving = { kind: 'plant', from: t }; toast(`Moving your <b>${esc(window.PLANT_BY_ID[rec.id].name)}</b>. Tap where it should go.`); }
+      else if (Y.terrainAt(t.x, t.y) === 'house' && Y.state.home.plan) { ui.moving = { kind: 'house', from: t }; toast('Moving your house. Tap where that spot should go.'); }
+      else toast('Tap a plant or your house to move it.');
+      requestDraw();
+      return;
+    }
+    ui.moving = null;
+    if (m.from.x === t.x && m.from.y === t.y) { requestDraw(); return; }
+    if (m.kind === 'plant') {
+      if (!Y.canPlantAt(t.x, t.y) || !Y.inLot(t.x, t.y)) { toast('That spot isn’t free. Pick empty lawn or bed.'); requestDraw(); return; }
+      snapshot();
+      const rec = Y.plantAt(m.from.x, m.from.y);
+      Y.movePlant(m.from, t);
+      ui.selected = t;
+      toast(`Moved your ${esc(window.PLANT_BY_ID[rec.id].name)}. Its history came with it.`);
+      persist();
+      return;
+    }
+    const p = Y.state.home.plan;
+    moveHouse(Y.clampPlan({ shape: p.shape, garage: p.garage, x: p.x + t.x - m.from.x, y: p.y + t.y - m.from.y }));
+  }
+  // restamp the house unless it would land on plants
+  function moveHouse(plan) {
+    const hit = Y.planConflicts(plan);
+    if (hit.length) {
+      toast(`That would cover ${hit.length} plant${hit.length === 1 ? '' : 's'}. Move ${hit.length === 1 ? 'it' : 'them'} first (Build &gt; Move).`, 'warn');
+      ui.highlight = hit; ui.highlightUntil = performance.now() + 2500;
+      requestDraw();
+      return false;
+    }
+    snapshot();
+    Y.stampHome(plan);
+    persist();
+    return true;
   }
 
   function undo() {
@@ -404,6 +537,7 @@
     if (ui.tool === 'look') lookAt(t);
     else if (ui.tool === 'plant') { if (ui.plantId) tryPlant(t); else openSheet('shop'); }
     else if (ui.tool === 'water') waterAt(t);
+    else if (ui.tool === 'build' && ui.terrain === 'move') moveTap(t);
   }
 
   // ---------- gestures ----------
@@ -418,7 +552,7 @@
       const p = local(e);
       gesture = { type: 'pending', start: p, last: p };
       if (e.pointerType === 'mouse' && e.button !== 0) gesture.type = 'pan';
-      else if (ui.tool === 'build') { gesture.type = 'paint'; startStroke(tileAt(p.x, p.y)); }
+      else if (ui.tool === 'build' && ui.terrain !== 'move') { gesture.type = 'paint'; startStroke(tileAt(p.x, p.y)); }
     } else if (pointers.size === 2) {
       endStroke();
       const [a, b] = [...pointers.values()];
@@ -451,6 +585,9 @@
     if (gesture.type === 'pan') {
       cam.x += p.x - gesture.last.x; cam.y += p.y - gesture.last.y;
       clampCam(); requestDraw();
+    } else if (gesture.type === 'paint' && ui.box) {
+      const t = tileAt(p.x, p.y);
+      if (t && ui.boxRect && (t.x !== ui.boxRect.x1 || t.y !== ui.boxRect.y1)) { ui.boxRect.x1 = t.x; ui.boxRect.y1 = t.y; requestDraw(); }
     } else if (gesture.type === 'paint') {
       paintAt(tileAt(p.x, p.y));
       if (e.pointerType === 'mouse') { ui.hover = tileAt(p.x, p.y); requestDraw(); }
@@ -483,9 +620,22 @@
   const shadeBtn = $('shade-toggle');
   function syncShadeBtn() { shadeBtn.setAttribute('aria-pressed', prefs.shade ? 'true' : 'false'); }
   shadeBtn.onclick = () => {
-    prefs.shade = !prefs.shade; savePrefs(); syncShadeBtn(); requestDraw();
-    toast(prefs.shade ? 'Showing tree shade: darker tiles get less sun.' : 'Shade map off');
+    prefs.shade = !prefs.shade; savePrefs(); syncShadeBtn();
+    if (!prefs.shade) ui.sunHour = null;
+    if (prefs.shade && ui.tool !== 'look') setTool('look');
+    renderModeChip(); requestDraw(true);
+    toast(prefs.shade ? 'Sun map: darker tiles get fewer hours of sun in the growing season. Drag the slider to watch shadows move.' : 'Sun map off');
   };
+  // compass: points north, set by which way the front door faces
+  function syncCompass() {
+    const v = window.SUN ? window.SUN.mapVector(0) : { x: 0, y: -1 };
+    const deg = Math.atan2(v.x, -v.y) * 180 / Math.PI;
+    $('compass').querySelector('.needle').style.transform = `rotate(${deg}deg)`;
+    $('compass').setAttribute('aria-label', `North is ${['up', 'up-right', 'right', 'down-right', 'down', 'down-left', 'left', 'up-left'][Math.round(((deg + 360) % 360) / 45) % 8]} on this map. Tap to set which way your front door faces.`);
+  }
+  $('compass').onclick = () => openSheet('house');
+  // shadows move: redraw every few minutes while showing the live sun
+  setInterval(() => { if (ui.sunHour == null) requestDraw(true); }, 5 * 60 * 1000);
 
   // ---------- tools ----------
   function setTool(tool) {
@@ -501,18 +651,39 @@
     const chip = $('mode-chip');
     chip.classList.remove('above');
     let html = '';
+    if (ui.tool === 'look' && prefs.shade) {
+      const h = ui.sunHour == null ? (() => { const n = new Date(); return n.getHours() + n.getMinutes() / 60; })() : ui.sunHour;
+      const fmt = v => { const hh = Math.floor(v), mm = Math.round((v - hh) * 60); return `${((hh + 11) % 12) + 1}:${String(mm).padStart(2, '0')} ${hh < 12 ? 'AM' : 'PM'}`; };
+      html = `${I.html('sun')}<span class="chip-text grow"><b>Shadows at <span id="sun-time">${fmt(h)}</span></b>
+        <input type="range" id="sun-slider" min="6" max="20.5" step="0.25" value="${Math.min(20.5, Math.max(6, h))}" aria-label="Time of day"></span>
+        <button class="btn alt" id="sun-now">Now</button>`;
+      chip.innerHTML = html;
+      chip.classList.remove('hidden');
+      const sl = $('sun-slider');
+      sl.oninput = () => { ui.sunHour = Number(sl.value); $('sun-time').textContent = fmt(ui.sunHour); requestDraw(true); };
+      $('sun-now').onclick = () => { ui.sunHour = null; renderModeChip(); requestDraw(true); };
+      return;
+    }
     if (ui.tool === 'plant' && ui.plantId) {
       const def = window.PLANT_BY_ID[ui.plantId];
       const hint = ui.plantMode === 'existing' ? 'Tap where it grows in your yard' : 'Tap a bed or lawn tile to plant';
       html = `${swatchImg(def, 'chip-sw')}<span class="chip-text"><b>${esc(def.name)}</b><br><span class="small muted">${hint}</span></span><button class="btn alt" id="chip-change">Change</button>`;
     } else if (ui.tool === 'water') {
       html = `${I.html('water')}<span class="chip-text"><b>Water</b><br><span class="small muted">After watering for real, tap the plant to log it</span></span>`;
+    } else if (ui.tool === 'build' && ui.lotDraw) {
+      chip.classList.add('above');
+      html = `${I.html('build')}<span class="chip-text"><b>Draw your lot</b><br><span class="small muted">Drag boxes with Lawn to claim it. Trim with Not mine.</span></span><button class="btn" id="chip-next">Next: my house</button>`;
     } else if (ui.tool === 'build') {
       chip.classList.add('above');
-      html = `${I.html('build')}<span class="chip-text"><b>Build</b><br><span class="small muted">Drag one finger to paint. Two fingers move the map.</span></span>`;
+      const how = ui.terrain === 'move' ? 'Tap a plant or your house, then tap where it goes.'
+        : ui.box ? (ui.terrain === 'fence' ? 'Drag a box to fence it in.' : 'Drag a box to fill it.')
+          : 'Drag one finger to paint. Two fingers move the map.';
+      html = `${I.html('build')}<span class="chip-text"><b>${ui.terrain === 'move' ? 'Move' : 'Build'}</b><br><span class="small muted">${how}</span></span>`;
     }
     chip.innerHTML = html;
     chip.classList.toggle('hidden', !html);
+    const nx = $('chip-next');
+    if (nx) nx.onclick = finishLotDrawing;
     const ch = $('chip-change');
     if (ch) ch.onclick = () => openSheet('shop');
     const img = chip.querySelector('.chip-sw');
@@ -536,9 +707,20 @@
     if (ui.sheet && ui.sheet.kind === kind) closeSheet(); else openSheet(kind);
   });
   $('pal-house').onclick = () => openSheet('house');
+  $('pal-box').onclick = () => {
+    ui.box = !ui.box;
+    $('pal-box').classList.toggle('active', ui.box);
+    $('pal-box').setAttribute('aria-pressed', ui.box ? 'true' : 'false');
+    renderModeChip();
+  };
+  function selectBrush(brush) {
+    ui.terrain = brush;
+    ui.moving = null;
+    document.querySelectorAll('#palette [data-terrain]').forEach(x => x.classList.toggle('active', x.dataset.terrain === brush));
+    renderModeChip(); requestDraw();
+  }
   document.querySelectorAll('#palette [data-terrain]').forEach(b => b.onclick = () => {
-    ui.terrain = b.dataset.terrain;
-    document.querySelectorAll('#palette [data-terrain]').forEach(x => x.classList.toggle('active', x === b));
+    selectBrush(b.dataset.terrain);
   });
 
   // ---------- sheets ----------
@@ -581,7 +763,7 @@
     const { kind, args } = ui.sheet;
     const r = {
       shop: renderShop, plant: renderPlantCard, info: renderPlantInfo,
-      quests: renderQuests, garden: renderGarden, weather: renderWeather, house: renderHouse,
+      quests: renderTodos, todos: renderTodos, garden: renderGarden, weather: renderWeather, house: renderHouse,
     }[kind](args);
     if (!r) { closeSheet(); return; }
     $('sheet-title').textContent = r.title;
@@ -721,7 +903,7 @@
     const ws = C.waterStatus(rec, ui.weather);
     const sun = Y.sunAt(x, y);
     const sunNote = def.type !== 'tree' && ((def.sun === 'full sun' && sun.level !== 'full') || (def.sun === 'shade' && sun.level === 'full'))
-      ? `<div class="warnline">This spot gets ${sunWords[sun.level]}${sun.by ? ' from your ' + esc(window.PLANT_BY_ID[sun.by.id].name) : ''}, but ${esc(def.name)} prefers ${def.sun}.</div>` : '';
+      ? `<div class="warnline">This spot gets ${sunWords[sun.level]}${sun.by ? ' from ' + esc(C.shadeFrom(sun.by)) : ''}, but ${esc(def.name)} prefers ${def.sun}.</div>` : '';
     const notes = rec.notes.slice().reverse();
     const buy = MON.amazonTag
       ? `<a class="btn alt" target="_blank" rel="noopener sponsored" href="https://www.amazon.com/s?k=${encodeURIComponent(def.name + (def.type === 'edible' ? ' seeds' : ' plant'))}&tag=${encodeURIComponent(MON.amazonTag)}">Buy</a>` : '';
@@ -777,7 +959,27 @@
   }
 
   // quests --------------------------------------------------------------
-  function renderQuests() {
+  // to-dos: today (with XP for real chores), a calendar, and trip planning
+  const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const dShort = iso => new Date(iso + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const plantNames = list => { const n = [...new Set(list.map(p => p.name))]; return n.slice(0, 4).join(', ') + (n.length > 4 ? ` +${n.length - 4} more` : ''); };
+
+  function renderTodos() {
+    const tab = ui.todoTab || 'today';
+    const seg = `<div class="seg">${[['today', 'Today'], ['calendar', 'Calendar'], ['trip', 'Going away?']].map(([k, l]) =>
+      `<button data-ttab="${k}" class="${tab === k ? 'active' : ''}">${l}</button>`).join('')}</div>`;
+    const part = { today: todosToday, calendar: todosCalendar, trip: todosTrip }[tab]();
+    return {
+      title: 'To-dos',
+      html: seg + part.html,
+      bind(body) {
+        body.querySelectorAll('[data-ttab]').forEach(b => b.onclick = () => { ui.todoTab = b.dataset.ttab; renderSheet(true); });
+        if (part.bind) part.bind(body);
+      },
+    };
+  }
+
+  function todosToday() {
     const qs = G.quests(ui.weather);
     const daily = qs.filter(q => !q.monthly), monthly = qs.filter(q => q.monthly);
     const doneN = daily.filter(q => q.complete).length;
@@ -789,16 +991,29 @@
       const prog = q.progress ? `<div class="prog"><i style="width:${Math.round(100 * q.progress.done / Math.max(1, q.progress.total))}%"></i></div>` : '';
       return `<div class="quest ${q.complete ? 'done' : ''}">${iconFor(q.icon)}<div class="grow"><div class="qt">${esc(q.title)}</div><div class="qs">${esc(q.sub)}</div>${prog}${extra}</div><span class="xp">+${q.xp}</span>${right}</div>`;
     };
+    // the week ahead: projected watering, rain that covers it
+    const plan = C.waterSchedule(ui.weather, 8);
+    const ahead = [];
+    for (let d = 1; d < 8; d++) {
+      const iso = Y.todayStr(d), list = plan.byDate[iso];
+      if (plan.rain[iso]) ahead.push(`<div class="ahead"><b>${dShort(iso)}</b><span>Rain (${plan.rain[iso].toFixed(1)}"): it does the watering</span></div>`);
+      else if (list) ahead.push(`<div class="ahead"><b>${dShort(iso)}</b><span>Water ${list.length}: ${esc(plantNames(list))}</span></div>`);
+    }
+    const trip = G.state().trip;
     return {
-      title: 'Quests',
-      html: `<p class="muted small">${doneN} of ${daily.length} done today. Tick a quest after you do it in your real garden.</p>
+      html: `<p class="muted small">${doneN} of ${daily.length} done today. Tick a to-do after you do it in your real garden.</p>
         <div class="section-title">Today</div>${daily.map(row).join('')}
-        ${monthly.length ? `<div class="section-title">This month</div>${monthly.map(row).join('')}` : ''}`,
+        ${monthly.length ? `<div class="section-title">This month</div>${monthly.map(row).join('')}` : ''}
+        <div class="section-title">This week</div>
+        ${ahead.length ? ahead.join('') : `<p class="small muted">No hand watering expected this week.${plan.rainFed ? ` Your ${plan.rainFed} established plant${plan.rainFed === 1 ? '' : 's'} live on rain.` : ''}</p>`}
+        ${trip ? `<div class="card"><b>Away ${dShort(trip.start)} to ${dShort(trip.end)}.</b> <button class="linkbtn" data-ttab-go="trip">See the watering plan</button></div>` : ''}`,
       bind(body) {
         body.querySelectorAll('[data-done]').forEach(b => b.onclick = () => {
           snapshot();
           if (G.completeQuest(b.dataset.done, ui.weather)) persist(); else Y.dropCheckpoint();
         });
+        const go = body.querySelector('[data-ttab-go]');
+        if (go) go.onclick = () => { ui.todoTab = 'trip'; renderSheet(true); };
         const show = body.querySelector('[data-show]');
         if (show) show.onclick = () => {
           const q = qs.find(x => x.id === 'water');
@@ -807,6 +1022,86 @@
           const [x, y] = q.plants[0].split(',').map(Number);
           centerOn(x, y, Math.max(cam.s, 1.6));
         };
+      },
+    };
+  }
+
+  // month grid: watering (projected ~6 weeks out), rain, frost/heat, trip days
+  function todosCalendar() {
+    const today = Y.todayStr();
+    const base = new Date(today + 'T12:00:00');
+    const off = ui.calMonth || 0;
+    const first = new Date(base.getFullYear(), base.getMonth() + off, 1, 12);
+    const plan = C.waterSchedule(ui.weather, 62);
+    const fc = ui.weather && !ui.weather.fallback ? ui.weather.forecast : [];
+    const trip = G.state().trip;
+    const iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const sel = ui.calDay || today;
+    let cells = '';
+    for (let i = 0; i < first.getDay(); i++) cells += '<span class="cd empty"></span>';
+    const days = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+    for (let n = 1; n <= days; n++) {
+      const d = iso(new Date(first.getFullYear(), first.getMonth(), n, 12));
+      const water = plan.byDate[d], f = fc.find(x => x.date === d);
+      const away = trip && d >= trip.start && d <= trip.end;
+      const marks = (water ? `<i class="m-water">${water.length}</i>` : '') + (plan.rain[d] ? '<i class="m-rain"></i>' : '')
+        + (f && f.loF <= 36 ? '<i class="m-frost"></i>' : '') + (f && f.hiF >= 98 ? '<i class="m-heat"></i>' : '');
+      cells += `<button class="cd${d === today ? ' today' : ''}${d < today ? ' past' : ''}${away ? ' away' : ''}${d === sel ? ' sel' : ''}" data-day="${d}"><span>${n}</span><span class="marks">${marks}</span></button>`;
+    }
+    // details for the selected day
+    const water = plan.byDate[sel], f = fc.find(x => x.date === sel), lines = [];
+    if (sel < today) lines.push('<p class="small muted">That day has passed. Your journal has what you did.</p>');
+    if (trip && sel >= trip.start && sel <= trip.end) lines.push(`<div class="ahead"><b>Away</b><span>${water ? 'Someone needs to water today (see Going away?)' : 'Nothing to water today'}</span></div>`);
+    if (plan.rain[sel]) lines.push(`<div class="ahead"><b>Rain</b><span>${plan.rain[sel].toFixed(1)}" forecast: skip the hose</span></div>`);
+    if (water) lines.push(`<div class="ahead"><b>Water ${water.length}</b><span>${esc(plantNames(water))}${water.some(p => p.establishing) ? '. New plants need it every 2 days until established.' : ''}</span></div>`);
+    if (f && f.loF <= 36) lines.push(`<div class="ahead"><b>Frost</b><span>Low of ${Math.round(f.loF)}°F: cover tender plants the evening before</span></div>`);
+    if (f && f.hiF >= 98) lines.push(`<div class="ahead"><b>Heat</b><span>High of ${Math.round(f.hiF)}°F: water the evening before</span></div>`);
+    if (sel.endsWith('-01')) lines.push(`<div class="ahead"><b>This month</b><span>${esc((G.monthlyChores(Number(sel.slice(5, 7))) || []).join('. '))}</span></div>`);
+    if (!lines.length && sel >= today) lines.push('<p class="small muted">Nothing to do this day.</p>');
+    const title = first.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    return {
+      html: `<div class="cal-head"><button class="mapbtn small" data-cal="-1" ${off <= 0 ? 'disabled' : ''} aria-label="Previous month">&lsaquo;</button><b>${title}</b><button class="mapbtn small" data-cal="1" ${off >= 1 ? 'disabled' : ''} aria-label="Next month">&rsaquo;</button></div>
+        <div class="calgrid">${WD.map(w => `<span class="cw">${w[0]}</span>`).join('')}${cells}</div>
+        <div class="cal-legend small"><span><i class="m-water">2</i> water</span><span><i class="m-rain"></i> rain</span><span><i class="m-frost"></i> frost</span><span><i class="m-heat"></i> heat</span><span><i class="m-away"></i> away</span></div>
+        <div class="section-title">${dShort(sel)}</div>${lines.join('')}
+        <p class="small muted">Watering is projected from each plant's needs and the forecast, assuming you water when it's due.</p>`,
+      bind(body) {
+        body.querySelectorAll('[data-day]').forEach(b => b.onclick = () => { ui.calDay = b.dataset.day; renderSheet(false); });
+        body.querySelectorAll('[data-cal]').forEach(b => b.onclick = () => { ui.calMonth = Math.max(0, Math.min(1, off + Number(b.dataset.cal))); renderSheet(false); });
+      },
+    };
+  }
+
+  // Going away? Pick dates; get the soak-before list and the helper days
+  function todosTrip() {
+    const trip = G.state().trip;
+    const start = trip ? trip.start : Y.todayStr(7), end = trip ? trip.end : Y.todayStr(13);
+    const plan = trip ? C.tripPlan(ui.weather, trip.start, trip.end) : null;
+    let out = '';
+    if (trip && !plan) out = '<p class="small warnline">Pick an end date on or after the start date.</p>';
+    else if (plan) {
+      const soak = plan.soakOn ? `<div class="ahead"><b>${dShort(plan.soakOn)}</b><span>Before you go: soak ${plan.scheduled ? `all ${plan.scheduled} plant${plan.scheduled === 1 ? '' : 's'} on a schedule` : 'any new plantings'} deeply, then mulch bare soil.</span></div>` : '';
+      const helper = plan.helper.map(h => `<div class="ahead need"><b>${dShort(h.date)}</b><span>Needs water: ${esc(plantNames(h.plants))}</span></div>`).join('');
+      out = `<div class="section-title">Your plan</div>${soak}
+        ${plan.helper.length ? `<p class="small"><b>Ask a neighbor or set a hose timer for these ${plan.helper.length} day${plan.helper.length === 1 ? '' : 's'}:</b></p>${helper}`
+          : `<div class="card status good"><b>No watering needed while you're gone.</b></div>`}
+        ${plan.rainDays.length ? `<p class="small">Rain is forecast on ${plan.rainDays.map(dShort).join(', ')}; that's already counted.</p>` : ''}
+        ${plan.rainFed ? `<p class="small muted">${plan.rainFed} established plant${plan.rainFed === 1 ? '' : 's'} live on rain and will be fine.</p>` : ''}
+        ${plan.helper.some(h => h.plants.some(p => p.establishing)) ? '<p class="small muted">New plants need water every 2 days until their roots establish. Planting right before a trip makes this list longer.</p>' : ''}`;
+    }
+    return {
+      html: `<p class="small">Leaving town? Pick your dates and see what to water before you go, and which days someone needs to water for you.</p>
+        <div class="trip-dates"><label>Leave<input type="date" id="trip-start" value="${start}" min="${Y.todayStr()}"></label><label>Back<input type="date" id="trip-end" value="${end}" min="${Y.todayStr()}"></label></div>
+        <div class="row"><button class="btn" id="trip-save">${trip ? 'Update plan' : 'Plan my trip'}</button>${trip ? '<button class="btn alt" id="trip-clear">Clear trip</button>' : ''}</div>
+        ${out}`,
+      bind(body) {
+        $('trip-save').onclick = () => {
+          const s = $('trip-start').value, e = $('trip-end').value;
+          if (!s || !e) { toast('Pick both dates.'); return; }
+          G.setTrip({ start: s, end: e < s ? s : e }); G.save(); renderSheet(false);
+        };
+        const c = $('trip-clear');
+        if (c) c.onclick = () => { G.setTrip(null); G.save(); renderSheet(false); };
       },
     };
   }
@@ -867,6 +1162,7 @@
     const line = j => ({
       planted: `Planted ${esc(name(j.plantId))}`,
       added: `Mapped your existing ${esc(name(j.plantId))}`,
+      moved: `Moved your ${esc(name(j.plantId))}`,
       died: `Lost ${esc(name(j.plantId))}${j.text ? ' (' + esc(j.text) + ')' : ''}`,
       note: `<b>${esc(name(j.plantId))}:</b> ${esc(j.text)}`,
       harvest: esc(j.text),
@@ -933,12 +1229,15 @@
     return {
       title: 'Your house',
       html: `<div class="card"><h3>Shape</h3>
-          <p class="small">${plan ? 'Tap a shape to swap it. Your beds and plants stay put unless the house moves onto them.' : 'Pick a shape to replace the house you painted.'}</p>
+          <p class="small">${plan ? 'Tap a shape to swap it. The house never lands on plants: move them first with Build &gt; Move.' : 'Pick a shape to replace the house you painted.'}</p>
           <div class="shapes">${shapes}</div>
           ${plan ? `<div class="section-title" style="margin-top:10px">Garage</div>${seg('garage', [['none', 'None'], ['left', 'Left'], ['right', 'Right']], plan.garage || 'none')}
           <div class="section-title" style="margin-top:10px">Move</div>
           <div class="nudge"><button data-move="-1,0" aria-label="Move left">&larr;</button><button data-move="0,-1" aria-label="Move back">&uarr;</button><button data-move="0,1" aria-label="Move toward the street">&darr;</button><button data-move="1,0" aria-label="Move right">&rarr;</button></div>` : ''}
-          <div class="section-title" style="margin-top:10px">Stories</div>${seg('stories', [[1, 'One'], [2, 'Two']], h.stories)}</div>
+          <div class="section-title" style="margin-top:10px">Stories</div>${seg('stories', [[1, 'One'], [2, 'Two']], h.stories)}
+          <div class="section-title" style="margin-top:10px">Your front door faces</div>
+          <p class="small muted">Sets where the sun rises and which way shadows fall. Stand at your front door and check a compass app.</p>
+          ${chipRow('facing', { N: 'North', NE: 'NE', E: 'East', SE: 'SE', S: 'South', SW: 'SW', W: 'West', NW: 'NW' }, h.facing || 'S')}</div>
         <div class="card"><h3>Walls</h3>${walls}</div>
         <div class="card"><h3>Roof</h3>${chipRow('roof', roofs, h.roof, v => frameColor('house/roof/' + v))}</div>
         ${barn ? '' : `<div class="card"><h3>Front door</h3>${chipRow('door', doors, h.door, v => DOORS[v][1])}</div>`}
@@ -950,22 +1249,20 @@
         <button class="btn block" id="house-done">Done</button>`,
       bind(body) {
         const change = fn => { snapshot(); fn(); persist(); };
-        body.querySelectorAll('[data-shape]').forEach(b => b.onclick = () => change(() => {
+        body.querySelectorAll('[data-shape]').forEach(b => b.onclick = () => {
           const p = h.plan;
-          const next = p ? Y.clampPlan({ shape: b.dataset.shape, garage: p.garage, x: p.x, y: p.y }) : Y.defaultPlan(b.dataset.shape, 'right');
-          Y.stampHome(next);
-          focusHouse();
-        }));
-        body.querySelectorAll('[data-home]').forEach(b => b.onclick = () => change(() => {
-          const f = b.dataset.home, v = b.dataset.v;
-          if (f === 'garage') { const p = h.plan; Y.stampHome(Y.clampPlan({ shape: p.shape, garage: v, x: p.x, y: p.y })); }
-          else h[f] = f === 'stories' ? Number(v) : v;
-        }));
+          if (moveHouse(p ? Y.clampPlan({ shape: b.dataset.shape, garage: p.garage, x: p.x, y: p.y }) : Y.defaultPlan(b.dataset.shape, 'right'))) focusHouse();
+        });
+        body.querySelectorAll('[data-home]').forEach(b => b.onclick = () => {
+          const f = b.dataset.home, v = b.dataset.v, p = h.plan;
+          if (f === 'garage') moveHouse(Y.clampPlan({ shape: p.shape, garage: v, x: p.x, y: p.y }));
+          else change(() => { h[f] = f === 'stories' ? Number(v) : v; });
+        });
         body.querySelectorAll('[data-toggle]').forEach(b => b.onclick = () => change(() => { h[b.dataset.toggle] = !h[b.dataset.toggle]; }));
-        body.querySelectorAll('[data-move]').forEach(b => b.onclick = () => change(() => {
+        body.querySelectorAll('[data-move]').forEach(b => b.onclick = () => {
           const [dx, dy] = b.dataset.move.split(',').map(Number), p = h.plan;
-          Y.stampHome(Y.clampPlan({ shape: p.shape, garage: p.garage, x: p.x + dx, y: p.y + dy }));
-        }));
+          moveHouse(Y.clampPlan({ shape: p.shape, garage: p.garage, x: p.x + dx, y: p.y + dy }));
+        });
         $('house-done').onclick = () => {
           closeSheet();
           if (ui.tool === 'build' || ui.afterHouse) {
@@ -1116,7 +1413,7 @@
         <div class="lots">${cards}</div>
         <button class="btn alt block" id="w-back">Back</button></div>`;
       I.apply(el);
-      el.querySelectorAll('[data-lot]').forEach(b => b.onclick = () => startGame('blank', null, b.dataset.lot));
+      el.querySelectorAll('[data-lot]').forEach(b => b.onclick = () => startGame(b.dataset.lot === 'draw' ? 'draw' : 'blank', null, b.dataset.lot));
       $('w-back').onclick = () => showWelcome('home');
       return;
     }
@@ -1145,15 +1442,16 @@
         x0 = x;
       }
     }
+    if (id === 'draw') rects += `<rect x="9" y="4" width="22" height="16" fill="none" stroke="#f2d16b" stroke-width="0.7" stroke-dasharray="1.6 1"/>`;
     return `<svg class="lot-ico" viewBox="0 0 ${Y.W} ${Y.H}" aria-hidden="true">${rects}</svg>`;
   }
 
   function startGame(mode, message, lot) {
     if (mode === 'demo') Y.buildDefaultLayout();
-    if (mode === 'blank') {
+    if (mode === 'blank' || mode === 'draw') {
       Y.emptyLot();
       Y.applyLot(lot || 'standard');
-      Y.stampHome(Y.defaultPlan('ranch', 'right'));
+      if (mode === 'blank') Y.stampHome(Y.defaultPlan('ranch', 'right'));
     }
     // a fresh yard (or a first run) starts a fresh game; re-importing your
     // yard from the More tab keeps your XP and badges
@@ -1170,7 +1468,29 @@
     initialCamera();
     if (message) toast(esc(message));
     if (mode === 'blank') { ui.afterHouse = true; openSheet('house'); } // tips wait until the house is done
+    else if (mode === 'draw') startLotDrawing();
     else if (!prefs.tipsSeen) showTips();
+  }
+
+  // Draw my own: Build with Lawn in box mode until "Next: my house"
+  function startLotDrawing() {
+    ui.lotDraw = true;
+    setTool('build');
+    selectBrush('grass');
+    if (!ui.box) $('pal-box').click();
+    cam.s = fitScale(); clampCam(); requestDraw();
+  }
+  function finishLotDrawing() {
+    let lawn = 0;
+    for (let y = 0; y < Y.H; y++) for (let x = 0; x < Y.W; x++) if (Y.inLot(x, y)) lawn++;
+    if (lawn < 120) { toast('Draw a bigger lot first: drag a box with Lawn. A house needs about 10 × 12 tiles.'); return; }
+    ui.lotDraw = false;
+    snapshot();
+    Y.stampHome(Y.defaultPlan('ranch', 'right'));
+    persist();
+    ui.afterHouse = true;
+    openSheet('house');
+    renderModeChip();
   }
 
   function showTips() {
@@ -1195,6 +1515,7 @@
   // ---------- boot ----------
   I.apply(document);
   syncShadeBtn();
+  syncCompass();
   new ResizeObserver(resize).observe(canvas);
   resize();
 

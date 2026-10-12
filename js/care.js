@@ -68,10 +68,10 @@
     }
     if (def.type !== 'tree') {
       const sun = Y().sunAt(x, y);
-      const tree = sun.by ? window.PLANT_BY_ID[sun.by.id].name : '';
+      const from = shadeFrom(sun.by), hrs = sun.hours != null ? ` (about ${Math.round(sun.hours)} hours of sun)` : '';
       if (!def.sunRange.includes(sun.level)) {
-        if (sun.level === 'part') out.push({ kind: 'sun', text: `Partial shade from your ${tree}: ${def.name} needs full sun, so expect fewer blooms here.` });
-        else if (sun.level === 'shade') out.push({ kind: 'sun', text: `Deep shade under your ${tree}: ${def.name} needs ${LIGHT[def.sunRange[0]]} and will struggle here.` });
+        if (sun.level === 'part') out.push({ kind: 'sun', text: `Part shade${from ? ' from ' + from : ''}${hrs}: ${def.name} needs full sun, so expect fewer blooms here.` });
+        else if (sun.level === 'shade') out.push({ kind: 'sun', text: `Deep shade${from ? ' from ' + from : ''}${hrs}: ${def.name} needs ${LIGHT[def.sunRange[0]]} and will struggle here.` });
         else out.push({ kind: 'sun', text: `Full sun: ${def.name} wants shade and will scorch in a Houston summer.` });
       }
     }
@@ -93,6 +93,65 @@
       if (near) out.push({ kind: 'house', text: `Close to the house: a ${def.name} needs about 15 ft from the foundation for its roots and limbs.` });
     }
     return out;
+  }
+
+  // ---------- planning ahead: the watering calendar and trips ----------
+  const INTERVAL = { low: 10, medium: 7, high: 4 };
+  function isoIn(n) { return Y().todayStr(n); }
+  function dayIndex(iso) { return -Y().daysSince(iso); } // 0 = today, 1 = tomorrow
+  function rainOn(w, iso) {
+    const f = w && !w.fallback && w.forecast ? w.forecast.find(d => d.date === iso) : null;
+    return f && f.rainIn >= 0.5 ? f.rainIn : 0;
+  }
+  // Day-by-day watering for the next `days` days. Each plant on a schedule is
+  // due when its interval since the last soak (by hand, or 0.5"+ of forecast
+  // rain) runs out, and is assumed watered when due. Established plants that
+  // live on rain never show up. soakOn: a date everything gets a deep soak
+  // (the day before a trip).
+  function waterSchedule(w, days, soakOn) {
+    const byDate = {}, rain = {};
+    let rainFed = 0, scheduled = 0;
+    for (let d = 0; d < days; d++) { const r = rainOn(w, isoIn(d)); if (r) rain[isoIn(d)] = r; }
+    for (const p of Y().allPlants()) {
+      if (!isEstablishing(p.rec) && p.rec.lastWatered === null) { rainFed++; continue; }
+      scheduled++;
+      const age = Y().daysSince(p.rec.planted);
+      let last = p.rec.lastWatered ? -Y().daysSince(p.rec.lastWatered) : -999;
+      for (let d = 0; d < days; d++) {
+        const iso = isoIn(d);
+        if (iso === soakOn || rain[iso]) { last = d; continue; }
+        const interval = age + d < p.def.establishDays ? 2 : INTERVAL[p.def.water];
+        const due = d === 0 ? waterStatus(p.rec, w).state === 'due' : d - last >= interval;
+        if (!due) continue;
+        (byDate[iso] = byDate[iso] || []).push({ key: p.key, name: p.def.name, establishing: age + d < p.def.establishDays });
+        last = d;
+      }
+    }
+    return { byDate, rain, rainFed, scheduled };
+  }
+
+  // A trip from `start` to `end` (ISO dates, inclusive): soak everything the
+  // day before, then list the days someone has to water while you're gone.
+  function tripPlan(w, start, end) {
+    const s = dayIndex(start), e = dayIndex(end);
+    if (e < s || e < 0) return null;
+    const soakOn = s >= 1 ? isoIn(s - 1) : null;
+    const plan = waterSchedule(w, e + 1, soakOn);
+    const helper = [];
+    for (let d = Math.max(0, s); d <= e; d++) {
+      const iso = isoIn(d);
+      if (plan.byDate[iso]) helper.push({ date: iso, plants: plan.byDate[iso] });
+    }
+    const rainDays = Object.keys(plan.rain).filter(iso => iso >= start && iso <= end);
+    return { soakOn, helper, rainDays, scheduled: plan.scheduled, rainFed: plan.rainFed, days: e - Math.max(0, s) + 1 };
+  }
+
+  // 'the house' | 'a fence' | 'your Live Oak' | ''
+  function shadeFrom(by) {
+    if (!by) return '';
+    if (by === 'house') return 'the house';
+    if (by === 'fence') return 'a fence';
+    return `your ${window.PLANT_BY_ID[by.id].name}`;
   }
 
   // ---------- labels ----------
@@ -270,6 +329,6 @@
 
   window.CARE = {
     MONTHS, LIGHT, monthList, waterStatus, waterInterval, isEstablishing, thirstyPlants, plantingWarnings, insights, thisMonth,
-    sunLabel, lifeLabel, BUY_LABEL, BUY_TEXT, gardenContext, scorePlant, rankPlants,
+    sunLabel, lifeLabel, shadeFrom, waterSchedule, tripPlan, BUY_LABEL, BUY_TEXT, gardenContext, scorePlant, rankPlants,
   };
 })();

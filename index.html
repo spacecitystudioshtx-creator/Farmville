@@ -45,13 +45,17 @@
       <button class="mapbtn small" id="z-fit" aria-label="Show the whole yard">FIT</button>
       <button class="mapbtn" id="shade-toggle" aria-label="Show tree shade" aria-pressed="false"><i class="ico" data-icon="shade"></i></button>
       <button class="mapbtn" id="undo" aria-label="Undo last change" disabled><i class="ico" data-icon="undo"></i></button>
+      <button class="mapbtn" id="compass" aria-label="Compass"><span class="needle">N</span></button>
     </div>
     <div class="palette hidden" id="palette" role="toolbar" aria-label="Build tools">
       <button id="pal-house"><span class="sw sw-home"><i class="ico" data-icon="garden"></i></span>My house</button>
+      <button data-terrain="move"><span class="sw sw-move"></span>Move</button>
+      <button id="pal-box" aria-pressed="false"><span class="sw sw-box"></span>Box</button>
       <button data-terrain="grass"><span class="sw sw-grass"></span>Lawn</button>
       <button data-terrain="soil" class="active"><span class="sw sw-soil"></span>Bed</button>
       <button data-terrain="path"><span class="sw sw-path"></span>Path</button>
       <button data-terrain="driveway"><span class="sw sw-drive"></span>Drive</button>
+      <button data-terrain="fence"><span class="sw sw-fence"></span>Fence</button>
       <button data-terrain="house"><span class="sw sw-house"></span>House</button>
       <button data-terrain="offlot"><span class="sw sw-offlot"></span>Not mine</button>
       <button data-terrain="dig"><span class="sw sw-dig"></span>Dig up</button>
@@ -65,7 +69,7 @@
     <button data-tool="plant"><i class="ico" data-icon="plant"></i><span>Plant</span></button>
     <button data-tool="water"><i class="ico" data-icon="water"></i><span>Water</span></button>
     <button data-tool="build"><i class="ico" data-icon="build"></i><span>Build</span></button>
-    <button data-open="quests"><i class="ico" data-icon="scroll"></i><span>Quests</span><b class="count hidden" id="quest-count">0</b></button>
+    <button data-open="todos"><i class="ico" data-icon="scroll"></i><span>To-dos</span><b class="count hidden" id="quest-count">0</b></button>
     <button data-open="garden"><i class="ico" data-icon="garden"></i><span>Garden</span></button>
   </nav>
 
@@ -88,6 +92,7 @@
 <script src="js/art.js"></script>
 <script src="js/sprites.js"></script>
 <script src="js/grid.js"></script>
+<script src="js/sun.js"></script>
 <script src="js/weather.js"></script>
 <script src="js/care.js"></script>
 <script src="js/game.js"></script>

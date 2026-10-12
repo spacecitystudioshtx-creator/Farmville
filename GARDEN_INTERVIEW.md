@@ -60,6 +60,9 @@ Indian Blanket, Winecup, Mealy Blue Sage, Cardinal Flower, Aquatic Milkweed,
 Frogfruit, Inland Sea Oats, Little Bluestem, American Beautyberry, Yaupon
 Holly, Coral Honeysuckle, Purple Passionflower, Buttonbush.
 Trees — Live Oak, Pecan, Texas Redbud, Mexican Plum, Possumhaw Holly.
+Garden-center favorites — Firebush, Esperanza (Yellow Bells), Pentas, Salvia
+'Black and Blue', Plumbago, Knock Out Rose, Zinnia, Sunflower, Caladium, Crape
+Myrtle, Rosemary.
 Edibles — Tomato (fall crop), Pepper, Bush Beans, Cucumber, Summer Squash,
 Broccoli, Kale / Collards, Lettuce, Carrot, Radish, Spinach, Garlic, Cilantro,
 Basil.

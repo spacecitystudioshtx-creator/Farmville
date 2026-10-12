@@ -23,6 +23,7 @@
       rewarded: {},               // scope ('YYYY-MM-DD' | 'YYYY-MM') -> { questId: true }
       day: { date: null, notes: 0, dueWatered: 0, nativePlanted: 0 },
       totals: { notes: 0, harvests: 0, rainDays: 0, planted: 0 },
+      trip: null,                 // { start, end } ISO dates while planning time away
     };
   }
 
@@ -190,12 +191,15 @@
     syncQuests,
     completeQuest,
     checkBadges,
+    setTrip(trip) { g.trip = trip; },
+    monthlyChores: m => MONTHLY_CHORES[m],
     serialize() { return JSON.stringify(g); },
     restore(json) { if (json) g = Object.assign(fresh(), JSON.parse(json)); },
     save() { try { localStorage.setItem(KEY, JSON.stringify(g)); } catch (e) { /* storage blocked */ } },
     load() {
       try { const raw = localStorage.getItem(KEY); if (raw) g = Object.assign(fresh(), JSON.parse(raw)); } catch (e) { g = fresh(); }
       rollDay();
+      if (g.trip && g.trip.end < Y().todayStr()) g.trip = null; // trip's over
     },
     reset() { g = fresh(); rollDay(); },
 

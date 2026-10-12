@@ -162,6 +162,38 @@ async function run(browser, label, contextOpts, mobile) {
   await page.waitForTimeout(250);
   if (await page.isVisible('#dialog')) { await page.click('#dialog-box .btn:not(.alt)'); await page.waitForTimeout(200); }
   check('picking it plants it in that spot', (await plantAt(page, 31, 19)) === spotPick);
+
+  // Build > Move carries a plant (and its history) to a new spot
+  const planted0 = await page.evaluate(() => window.YARD.plantAt(31, 19).planted);
+  await page.evaluate(() => document.querySelector('.toolbar [data-tool="build"]').click());
+  await page.click('[data-terrain="move"]');
+  await tap(page, mobile, await tilePoint(page, 31, 19));
+  await tap(page, mobile, await tilePoint(page, 30, 18));
+  check('Move puts the plant in its new spot', (await plantAt(page, 30, 18)) === spotPick && (await plantAt(page, 31, 19)) === null);
+  check('a moved plant keeps its history', await page.evaluate(d => window.YARD.plantAt(30, 18).planted === d, planted0));
+  // brushes never pave over a plant
+  await page.click('[data-terrain="path"]');
+  await tap(page, mobile, await tilePoint(page, 30, 18));
+  check('a path brush leaves the plant alone', (await plantAt(page, 30, 18)) === spotPick && await page.evaluate(() => window.YARD.terrainAt(30, 18) !== 'path'));
+  // Box + Fence draws a fenced rectangle
+  await page.click('[data-terrain="fence"]');
+  await page.click('#pal-box');
+  const fa = await tilePoint(page, 26, 2), fb = await page.evaluate(() => {
+    const r = document.getElementById('yard').getBoundingClientRect(), c = window.__GS.cam, T = window.SPRITES.TILE;
+    return { x: r.left + c.x + 31.5 * T * c.s, y: r.top + c.y + 5.5 * T * c.s };
+  });
+  if (mobile) {
+    await page.evaluate(([a, b]) => {
+      const cv = document.getElementById('yard');
+      const ev = (type, p) => cv.dispatchEvent(new PointerEvent(type, { pointerId: 21, pointerType: 'touch', clientX: p.x, clientY: p.y, bubbles: true }));
+      ev('pointerdown', a); for (let i = 1; i <= 6; i++) ev('pointermove', { x: a.x + (b.x - a.x) * i / 6, y: a.y + (b.y - a.y) * i / 6 }); ev('pointerup', b);
+    }, [fa, fb]);
+  } else { await page.mouse.move(fa.x, fa.y); await page.mouse.down(); await page.mouse.move(fb.x, fb.y, { steps: 6 }); await page.mouse.up(); }
+  await page.waitForTimeout(200);
+  const fences = await page.evaluate(() => Object.keys(window.YARD.state.fences).length);
+  check('Box + Fence fences in a rectangle (outline only)', fences >= 14 && fences <= 20, fences);
+  await page.click('#pal-box');
+  await shot(page, label + '-5b-fence');
   await page.evaluate(() => window.__GS.openSheet('shop'));
   await page.evaluate(() => window.__GS.closeSheet());
   await page.waitForTimeout(300);
@@ -190,13 +222,33 @@ async function run(browser, label, contextOpts, mobile) {
   // quests
   await page.evaluate(() => window.__GS.openSheet('quests'));
   await page.waitForTimeout(150);
-  check('quests panel lists quests', (await page.$$('.quest')).length >= 3);
+  check('to-dos panel lists today\'s to-dos', (await page.$$('.quest')).length >= 3);
   check('note quest auto-completed', await page.evaluate(() => window.GAME.quests(null).find(q => q.id === 'note').complete));
   before = await xp(page);
   await page.click('[data-done="chore0"]');
   await page.waitForTimeout(150);
   check('ticking a monthly chore pays its XP', (await xp(page)) - before >= 15, (await xp(page)) - before);
   await shot(page, label + '-6-quests');
+
+  // calendar and trip planning
+  await page.click('[data-ttab="calendar"]');
+  await page.waitForTimeout(150);
+  check('calendar shows the month', (await page.$$('.calgrid .cd:not(.empty)')).length >= 28);
+  check('calendar marks watering days', (await page.$$('.calgrid .m-water')).length >= 1);
+  await shot(page, label + '-6b-calendar');
+  // a new planting needs water every 2 days, so a week away needs a helper
+  await page.evaluate(() => { const r = window.YARD.plantAt(10, 16); r.planted = r.lastWatered = window.YARD.todayStr(); });
+  await page.click('[data-ttab="trip"]');
+  await page.fill('#trip-start', await page.evaluate(() => window.YARD.todayStr(3)));
+  await page.fill('#trip-end', await page.evaluate(() => window.YARD.todayStr(10)));
+  await page.click('#trip-save');
+  await page.waitForTimeout(150);
+  const tripText = await page.textContent('#sheet-body');
+  check('trip plan says what to soak before leaving', /Before you go/.test(tripText), tripText.slice(0, 120));
+  check('trip plan lists days a helper must water', (await page.$$('.ahead.need')).length >= 2);
+  await shot(page, label + '-6c-trip');
+  await page.click('#trip-clear');
+  await page.click('[data-ttab="today"]');
 
   // build: paint a bed stroke, then undo it
   await page.evaluate(() => { window.__GS.closeSheet(); document.querySelector('.toolbar [data-tool="build"]').click(); });
@@ -285,6 +337,9 @@ async function runBuilder(browser, label, contextOpts, mobile) {
   await page.click('[data-home="wall"][data-v="sage"]');
   await page.click('[data-home="boxes"][data-v="red"]');
   await page.click('[data-toggle="chimney"]');
+  await page.click('[data-home="facing"][data-v="N"]');
+  check('front door direction turns the compass', await page.evaluate(() => window.YARD.state.home.facing === 'N'
+    && /rotate\((180|-180)deg\)/.test(document.querySelector('#compass .needle').style.transform)));
   const x0 = await page.evaluate(() => window.YARD.state.home.plan.x);
   await page.click('[data-move="1,0"]');
   await page.waitForTimeout(200);
@@ -321,6 +376,35 @@ async function runBuilder(browser, label, contextOpts, mobile) {
   await ctx.close();
 }
 
+// Draw my own lot: drag a box of lawn, then Next builds the house on it
+async function runDrawLot(browser, label, contextOpts) {
+  console.log(`\n== ${label}: draw my own lot ==`);
+  const ctx = await browser.newContext(contextOpts);
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', e => errors.push(e.message));
+  await page.goto(`http://localhost:${server.address().port}/index.html`, { waitUntil: 'load' });
+  await page.waitForTimeout(800);
+  await page.click('#w-blank');
+  await page.click('[data-lot="draw"]');
+  await page.waitForTimeout(300);
+  check('drawing starts with no lot', await page.evaluate(() => { let n = 0; for (let y = 0; y < window.YARD.H; y++) for (let x = 0; x < window.YARD.W; x++) if (window.YARD.inLot(x, y)) n++; return n === 0; }));
+  check('Build is ready with Lawn in box mode', await page.evaluate(() => window.__GS.ui.tool === 'build' && window.__GS.ui.terrain === 'grass' && window.__GS.ui.box));
+  const pt = (x, y) => page.evaluate(([x, y]) => { const r = document.getElementById('yard').getBoundingClientRect(), c = window.__GS.cam, T = window.SPRITES.TILE; return { x: r.left + c.x + (x + 0.5) * T * c.s, y: r.top + c.y + (y + 0.5) * T * c.s }; }, [x, y]);
+  const a = await pt(6, 3), b = await pt(33, 23);
+  await page.mouse.move(a.x, a.y); await page.mouse.down(); await page.mouse.move(b.x, b.y, { steps: 8 }); await page.mouse.up();
+  await page.waitForTimeout(200);
+  const lawn = await page.evaluate(() => { let n = 0; for (let y = 0; y < window.YARD.H; y++) for (let x = 0; x < window.YARD.W; x++) if (window.YARD.inLot(x, y)) n++; return n; });
+  check('a dragged box claims the lot', lawn === 28 * 21, lawn);
+  await shot(page, label + '-d1-drawn');
+  await page.click('#chip-next');
+  await page.waitForTimeout(400);
+  check('Next builds a house on the drawn lot', await page.evaluate(() => window.YARD.houseTiles().every(([x, y]) => x >= 6 && x <= 33 && y >= 3 && y <= 23) && window.YARD.houseTiles().length > 50));
+  check('then opens the house builder', (await page.textContent('#sheet-title')) === 'Your house');
+  check('no JavaScript errors', errors.length === 0, errors);
+  await ctx.close();
+}
+
 let server;
 (async () => {
   server = await serve();
@@ -331,6 +415,7 @@ let server;
     await run(browser, 'desktop', { viewport: { width: 1440, height: 900 } }, false);
     await runBuilder(browser, 'phone', { ...devices['iPhone 13'] }, true);
     await runBuilder(browser, 'desktop', { viewport: { width: 1440, height: 900 } }, false);
+    await runDrawLot(browser, 'desktop', { viewport: { width: 1440, height: 900 } });
   } catch (e) {
     console.log('FAIL  crashed: ' + (e.stack || e));
     failures++;

@@ -8,7 +8,8 @@ overrides before changing behavior.
 ## The one rule
 The game never rewards something bad for the real garden: no XP for watering a
 plant that isn't thirsty or was covered by rain, none for out-of-season
-planting. New reward paths must respect this.
+planting. New reward paths must respect this. Out-of-season plantings are
+flagged `offSeason` and don't count toward badges either.
 
 ## Architecture (plain HTML/CSS/JS, no build step)
 Scripts load in order from `index.html`; each exposes one global.
@@ -19,10 +20,11 @@ Scripts load in order from `index.html`; each exposes one global.
 | `js/plants.js` | `PLANTS`, `PLANT_BY_ID` | 41-plant Houston catalog + wildlife / host tags, light range (`sunRange`), life cycle (`life`) |
 | `js/art.js` | `ART` | Optional image tileset from `assets/art/manifest.json` with facsimile fallback |
 | `js/sprites.js` | `SPRITES` | Procedural pixel renderer; uses `ART` images when present |
-| `js/grid.js` | `YARD` | Garden state (terrain, plants, journal, lost), shade, undo, save v2 |
+| `js/grid.js` | `YARD` | Garden state (terrain, plants, fences, journal, lost, home), undo, save v2 |
+| `js/sun.js` | `SUN` | Sun position for the address, growing-season sun hours per tile, live shadows (house, fences, trees; front-door direction sets the compass) |
 | `js/weather.js` | `WEATHER` | Open-Meteo, falls back to Houston monthly normals |
-| `js/care.js` | `CARE` | Watering status, planting warnings, garden insights, "what to plant" ranking (pure) |
-| `js/game.js` | `GAME` | XP, levels, streak, badges, quests; emits events |
+| `js/care.js` | `CARE` | Watering status and schedule, trip plans, planting warnings, garden insights, "what to plant" ranking (pure) |
+| `js/game.js` | `GAME` | XP, levels, streak, badges, to-dos (`quests()` internally), trip dates; emits events |
 | `js/importer.js` | `IMPORTER` | Backup + Claude-interview JSON import |
 | `js/icons.js` | `ICONS` | 12×12 pixel icons from character maps |
 | `js/main.js` | — | Camera, gestures, tools, sheets, welcome; test hook `window.__GS` |
@@ -56,6 +58,14 @@ action also takes back its XP.
   New planting is ranked by `CARE.rankPlants` (timing, light, room, goals,
   bloom gaps, ease, variety), for the whole yard or for an empty tile tapped
   in Look. The plan and weights are in `PLANT_PICKING.md`; keep them in sync.
+  `buy` in `js/plants.js` (bigbox / seed / nursery) is typical Houston stock.
+- Build never destroys plants: brushes skip them (`setTerrain`/`setFence`
+  return 'blocked'), the house builder refuses to land on them
+  (`planConflicts`), and Move carries a plant with its history. Box mode
+  fills a rectangle (Fence draws its outline). "Draw my own" lot starts empty.
+- To-dos (toolbar) = today's list (XP), a calendar of projected watering,
+  rain, frost and heat (`CARE.waterSchedule`), and "Going away?"
+  (`CARE.tripPlan`: soak the day before, then the days a helper must water).
 
 ## Test
 ```bash

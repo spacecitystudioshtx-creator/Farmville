@@ -118,6 +118,11 @@ double down on the one that does. Time the big pushes to the two gardening surge
 - **Live weather** (Open-Meteo) with Houston monthly averages as a fallback.
 - **What to plant**: the shop ranks plants like a local gardener would for your yard this
   month (season, your light, room, bloom gaps, wildlife) and says why. See PLANT_PICKING.md.
+- **To-dos**: today's real chores (XP), a watering calendar from the forecast, and a trip
+  planner that says what to soak before you leave and which days someone must water.
+- **Sun and shadows**: tell the house builder which way your front door faces; shadows
+  follow the real sun over your address, and sun hours drive every plant pick.
+- **Build**: fences, box drawing, draw-your-own lot, and Move for plants and the house.
 - **Welcome flow**: demo yard, build your own (pick a lot shape, then a preset house you can
   restyle), or describe your yard to Claude.
 - **Undo**, backup/restore, share a picture of your yard, installable PWA.
