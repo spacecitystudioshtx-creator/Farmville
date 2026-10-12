@@ -624,3 +624,28 @@ i.m-away { background: repeating-linear-gradient(45deg, rgba(127,176,216,.8) 0 2
 .trip-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .trip-dates label { display: flex; flex-direction: column; gap: 4px; font-family: var(--pixel); font-size: 14px; }
 .trip-dates input { padding: 8px; border: 2px solid var(--wood-900); border-radius: 10px; background: #fffdf5; font: inherit; font-family: inherit; }
+
+/* build palette undo */
+.sw-undo { background: var(--paper-2); display: grid; place-items: center; }
+.sw-undo .ico { width: 18px; height: 18px; }
+.palette button:disabled { opacity: .4; }
+/* garden: plants dashboard */
+.tile.warn b { color: var(--danger); }
+.prow { text-align: left; width: 100%; }
+.prow .next { font-size: 14px; color: var(--ink-2); }
+.prow .next b { font-family: var(--pixel); font-weight: 600; }
+.prow .next.today { color: #9a3412; }
+.prow .next.today b { color: var(--danger); }
+.prow .next.week b { color: #2f6fa8; }
+/* plant dashboard */
+.agenda, .needs { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.ag, .need { display: grid; grid-template-columns: 86px 1fr; gap: 8px; align-items: baseline; padding: 6px 8px; border-radius: 8px; background: var(--paper); border: 2px solid var(--paper-line); }
+.ag b, .need b { font-family: var(--pixel); font-weight: 600; font-size: 14px; }
+.ag > span { display: flex; flex-direction: column; gap: 2px; }
+.ag .agt { font-weight: 700; font-size: 14px; }
+.ag.urgent { border-color: var(--danger); background: #f8dccf; }
+.need { font-size: 14px; }
+.need.ok b::after { content: ' ✓'; color: var(--leaf); }
+.need.warn { border-color: #d9873a; background: #fbe6cf; }
+.need.warn b::after { content: ' !'; color: #b4531a; }
+.linkbtn.back { align-self: flex-start; }

@@ -17,13 +17,13 @@ Scripts load in order from `index.html`; each exposes one global.
 | File | Global | Role |
 |---|---|---|
 | `js/config.js` | `SITE` | Address, coords, grid size, monetization switches (all off) |
-| `js/plants.js` | `PLANTS`, `PLANT_BY_ID` | 41-plant Houston catalog + wildlife / host tags, light range (`sunRange`), life cycle (`life`) |
+| `js/plants.js` | `PLANTS`, `PLANT_BY_ID` | 52-plant Houston catalog + wildlife / host tags, light range (`sunRange`), life cycle (`life`) |
 | `js/art.js` | `ART` | Optional image tileset from `assets/art/manifest.json` with facsimile fallback |
 | `js/sprites.js` | `SPRITES` | Procedural pixel renderer; uses `ART` images when present |
 | `js/grid.js` | `YARD` | Garden state (terrain, plants, fences, journal, lost, home), undo, save v2 |
 | `js/sun.js` | `SUN` | Sun position for the address, growing-season sun hours per tile, live shadows (house, fences, trees; front-door direction sets the compass) |
 | `js/weather.js` | `WEATHER` | Open-Meteo, falls back to Houston monthly normals |
-| `js/care.js` | `CARE` | Watering status and schedule, trip plans, planting warnings, garden insights, "what to plant" ranking (pure) |
+| `js/care.js` | `CARE` | Watering status and schedule, trip plans, per-plant agenda (`plantAgenda`, `gardenDashboard`), planting warnings, garden insights, "what to plant" ranking (pure) |
 | `js/game.js` | `GAME` | XP, levels, streak, badges, to-dos (`quests()` internally), trip dates; emits events |
 | `js/importer.js` | `IMPORTER` | Backup + Claude-interview JSON import |
 | `js/icons.js` | `ICONS` | 12×12 pixel icons from character maps |
@@ -63,6 +63,12 @@ action also takes back its XP.
   return 'blocked'), the house builder refuses to land on them
   (`planConflicts`), and Move carries a plant with its history. Box mode
   fills a rectangle (Fence draws its outline). "Draw my own" lot starts empty.
+- Garden > Plants (the default tab) is the per-plant dashboard: every plant
+  grouped by its next action (today / this week / this month / later). A
+  plant's card shows Next up, What it needs (checked against its spot), What
+  it gives. Seasonal care lives in `TYPE_CARE` / `PLANT_CARE` in `js/care.js`
+  (conservative Houston timing, e.g. live oaks pruned only Jul–Jan).
+- The Build palette has its own Undo (same stack as the map's undo button).
 - To-dos (toolbar) = today's list (XP), a calendar of projected watering,
   rain, frost and heat (`CARE.waterSchedule`), and "Going away?"
   (`CARE.tripPlan`: soak the day before, then the days a helper must water).

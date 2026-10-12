@@ -263,7 +263,8 @@ async function run(browser, label, contextOpts, mobile) {
   }, [a, b]);
   const painted = await page.evaluate(() => [4, 5, 6, 7, 8].filter(x => window.YARD.terrainAt(x, 22) === 'soil').length);
   check('one-finger drag paints a bed', painted === 5, painted);
-  await page.click('#undo');
+  check('Build palette has Undo', await page.isVisible('#pal-undo') && !(await page.isDisabled('#pal-undo')));
+  await page.click('#pal-undo');
   await page.waitForTimeout(150);
   const after = await page.evaluate(() => [4, 5, 6, 7, 8].filter(x => window.YARD.terrainAt(x, 22) === 'soil').length);
   check('undo removes the painted bed', after === 0, after);
@@ -282,9 +283,22 @@ async function run(browser, label, contextOpts, mobile) {
   const s1 = await page.evaluate(() => window.__GS.cam.s);
   check('pinch out zooms in', s1 > s0 * 1.4, { s0, s1 });
 
-  // garden report + badges
-  await page.evaluate(() => window.__GS.openSheet('garden'));
+  // garden: plants dashboard, a plant's own dashboard, report, badges
+  await page.evaluate(() => { window.__GS.ui.gardenTab = 'plants'; window.__GS.openSheet('garden'); });
   await page.waitForTimeout(150);
+  const rows = await page.$$eval('.prow', els => els.map(e => e.textContent.replace(/\s+/g, ' ').trim()));
+  const nPlants = await page.evaluate(() => window.YARD.allPlants().length);
+  check('Plants dashboard lists every plant', rows.length === nPlants, { rows: rows.length, nPlants });
+  check('each plant shows its next action', rows.every(t => /Water|Cut|Prune|Mulch|Snip|Cover|Check|Shape|Pick|harvest|Leave|Pull|Move|No hand watering|Trim|Let/i.test(t)), rows.slice(0, 3));
+  await shot(page, label + '-7a-plants');
+  await page.click('.prow');
+  await page.waitForTimeout(150);
+  const card = await page.textContent('#sheet-body');
+  check('a plant opens its dashboard: next up, needs, gives', /Next up/.test(card) && /What it needs/.test(card) && /Sun/.test(card), card.slice(0, 80));
+  await shot(page, label + '-7b-plantdash');
+  await page.click('#pc-back');
+  await page.waitForTimeout(150);
+  await page.click('[data-tab="report"]');
   check('garden report shows stats', (await page.$$('.tile')).length === 4);
   await shot(page, label + '-7-report');
   await page.click('[data-tab="badges"]');

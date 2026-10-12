@@ -365,12 +365,23 @@ const BUY = {
   broccoli: 'bigbox', kale: 'bigbox seed', lettuce: 'bigbox seed', carrot: 'seed', radish: 'seed',
   spinach: 'seed', garlic: 'seed', cilantro: 'bigbox seed', basil: 'bigbox seed',
 };
+// Edibles: days from planting to the first harvest (transplants for tomato,
+// pepper, broccoli, kale; seed for the rest). Approximate; weather moves it.
+const HARVEST_DAYS = {
+  falltomato: 70, pepper: 75, bushbeans: 55, cucumber: 55, squash: 50, broccoli: 70, kale: 50,
+  lettuce: 45, carrot: 70, radish: 25, spinach: 40, garlic: 210, cilantro: 40, basil: 30, rosemary: 90,
+};
+// Damaged or killed by a hard freeze here: cover them when a freeze is coming.
+const TENDER = ['firebush', 'esperanza', 'pentas', 'plumbago', 'caladium', 'basil', 'falltomato', 'pepper',
+  'bushbeans', 'cucumber', 'squash', 'zinnia'];
 const SUN_LEVEL = { 'full sun': 'full', 'part shade': 'part', shade: 'shade' };
 for (const p of window.PLANTS) {
   p.life = LIFE[p.id] || (['tree', 'shrub', 'vine'].includes(p.type) ? 'woody' : 'perennial');
   p.sunPref = SUN_LEVEL[p.sun];
   p.sunRange = (SUN_RANGE[p.id] || p.sunPref).split(' ');
   p.buy = (BUY[p.id] || 'nursery').split(' ');
+  p.harvestDays = HARVEST_DAYS[p.id] || null;
+  p.tender = TENDER.includes(p.id);
   p.wildlife = WILDLIFE[p.id] || [];
   p.hostFor = HOST_FOR[p.id] || null;
   p.harvestable = p.type === 'edible';

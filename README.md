@@ -118,6 +118,8 @@ double down on the one that does. Time the big pushes to the two gardening surge
 - **Live weather** (Open-Meteo) with Houston monthly averages as a fallback.
 - **What to plant**: the shop ranks plants like a local gardener would for your yard this
   month (season, your light, room, bloom gaps, wildlife) and says why. See PLANT_PICKING.md.
+- **Plants dashboard**: Garden > Plants lists every plant with its next action and when;
+  tap one for what it needs (sun, water, space, soil, cold), checked against its actual spot.
 - **To-dos**: today's real chores (XP), a watering calendar from the forecast, and a trip
   planner that says what to soak before you leave and which days someone must water.
 - **Sun and shadows**: tell the house builder which way your front door faces; shadows

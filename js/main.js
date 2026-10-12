@@ -22,7 +22,7 @@
   const ui = {
     tool: 'look', plantId: null, terrain: 'soil',
     selected: null, hover: null, highlight: null, highlightUntil: 0,
-    weather: null, sheet: null, shopFilter: 'all', shopQuery: '', gardenTab: 'report', plantMode: 'new',
+    weather: null, sheet: null, shopFilter: 'all', shopQuery: '', gardenTab: 'plants', plantMode: 'new',
   };
 
   // ---------- camera ----------
@@ -309,6 +309,7 @@
     badge.textContent = open;
     badge.classList.toggle('hidden', open === 0);
     $('undo').disabled = !Y.canUndo();
+    $('pal-undo').disabled = !Y.canUndo();
   }
 
   // ---------- toasts, banners, dialogs ----------
@@ -707,6 +708,7 @@
     if (ui.sheet && ui.sheet.kind === kind) closeSheet(); else openSheet(kind);
   });
   $('pal-house').onclick = () => openSheet('house');
+  $('pal-undo').onclick = undo;
   $('pal-box').onclick = () => {
     ui.box = !ui.box;
     $('pal-box').classList.toggle('active', ui.box);
@@ -894,7 +896,33 @@
     };
   }
 
-  function renderPlantCard({ x, y }) {
+  // what a plant needs, checked against its actual spot: [label, ok|warn|info, text]
+  function plantNeeds(def, rec, x, y) {
+    const sun = Y.sunAt(x, y), out = [];
+    const hrs = sun.hours != null ? `about ${Math.round(sun.hours)} hours of sun` : sunWords[sun.level];
+    const sunOk = def.type === 'tree' || def.sunRange.includes(sun.level);
+    out.push(['Sun', sunOk ? 'ok' : 'warn', `Needs ${C.sunLabel(def).toLowerCase()}${def.sunRange.length > 1 ? ` (best in ${C.LIGHT[def.sunPref]})` : ''}. This spot gets ${hrs}${sun.by && sun.level !== 'full' ? ', shaded by ' + C.shadeFrom(sun.by) : ''}.`]);
+    const every = { low: 10, medium: 7, high: 4 }[def.water];
+    out.push(['Water', 'info', C.isEstablishing(rec)
+      ? `Every 2 days while its roots establish (until ${fmtDate(Y.todayStr(def.establishDays - Y.daysSince(rec.planted)))}), then ${def.water}: about every ${every} days in dry weather.`
+      : rec.lastWatered === null ? `${cap(def.water)}. Established, so rain covers it; water only in a long dry spell.` : `${cap(def.water)}: about every ${every} days in dry weather.`]);
+    let near = null;
+    for (const p of Y.allPlants()) {
+      if ((p.x === x && p.y === y) || (p.def.type === 'tree') !== (def.type === 'tree')) continue;
+      const ft = Math.hypot(p.x - x, p.y - y) * window.SITE.tileFeet;
+      if (!near || ft < near.ft) near = { p, ft };
+    }
+    const need = def.spacingFt;
+    out.push(['Space', near && near.ft < (need + near.p.def.spacingFt) / 2 * 0.6 ? 'warn' : 'ok',
+      `${need} ft apart, ${def.heightFt} ft tall when grown.${near ? ` Nearest ${def.type === 'tree' ? 'tree' : 'plant'}: your ${near.p.def.name}, ${Math.round(near.ft)} ft away.` : ''}`]);
+    const drain = /drain|wet feet|raised|mound/i.test(def.notes), wet = def.water === 'high';
+    out.push(['Soil', drain ? 'warn' : 'info', drain ? 'Needs good drainage. In Houston clay, plant it high: a raised bed or a mound.'
+      : wet ? 'Likes moist soil. A low spot that stays damp suits it.' : 'Fine in Houston clay with compost worked in.']);
+    if (def.tender) out.push(['Cold', 'info', 'Tender: cover it when the forecast drops below freezing.']);
+    return out;
+  }
+
+  function renderPlantCard({ x, y, from }) {
     const rec = Y.plantAt(x, y);
     if (!rec) return null;
     const def = window.PLANT_BY_ID[rec.id];
@@ -902,22 +930,30 @@
     const age = Y.daysSince(rec.planted);
     const ws = C.waterStatus(rec, ui.weather);
     const sun = Y.sunAt(x, y);
-    const sunNote = def.type !== 'tree' && ((def.sun === 'full sun' && sun.level !== 'full') || (def.sun === 'shade' && sun.level === 'full'))
-      ? `<div class="warnline">This spot gets ${sunWords[sun.level]}${sun.by ? ' from ' + esc(C.shadeFrom(sun.by)) : ''}, but ${esc(def.name)} prefers ${def.sun}.</div>` : '';
+    const agenda = C.plantAgenda({ x, y, key: Y.key(x, y), rec, def }, ui.weather).filter(a => a.date || a.kind === 'water');
+    const nextUp = `<div class="card"><h3>Next up</h3><div class="agenda">${agenda.slice(0, 6).map(a =>
+      `<div class="ag ${a.urgent ? 'urgent' : ''}"><b>${C.whenLabel(a) || 'Ongoing'}</b><span><span class="agt">${esc(a.text)}</span><span class="small muted">${esc(a.why)}</span></span></div>`).join('')}</div></div>`;
+    const needs = `<div class="card"><h3>What it needs</h3><div class="needs">${plantNeeds(def, rec, x, y).map(([k, st, t]) =>
+      `<div class="need ${st}"><b>${k}</b><span>${esc(t)}</span></div>`).join('')}</div></div>`;
+    const gives = [def.wildlife.length ? `Feeds ${def.wildlife.join(', ')}.` : '', def.hostFor ? `Caterpillar host for ${def.hostFor}: chewed leaves mean it's working.` : '',
+      def.harvestDays ? `Harvest about ${def.harvestDays} days after planting.` : '', def.native ? 'Texas native: built for this climate.' : ''].filter(Boolean);
+    const sunNote = '';
     const notes = rec.notes.slice().reverse();
     const buy = MON.amazonTag
       ? `<a class="btn alt" target="_blank" rel="noopener sponsored" href="https://www.amazon.com/s?k=${encodeURIComponent(def.name + (def.type === 'edible' ? ' seeds' : ' plant'))}&tag=${encodeURIComponent(MON.amazonTag)}">Buy</a>` : '';
     return {
       title: def.name,
-      html: `${headBlock(def, stage)}
+      html: `${from === 'garden' ? '<button class="linkbtn back" id="pc-back">&larr; All plants</button>' : ''}${headBlock(def, stage)}
         <div class="stat-line"><span><b>${Y.STAGE_NAMES[stage]}</b></span>
           <span>${age > 3650 ? 'Long-established' : `Planted ${fmtDate(rec.planted)} (${age === 0 ? 'today' : age + ' days ago'})`}</span>
           <span>${cap(sunWords[sun.level])} here</span></div>
         ${sunNote}
+        ${nextUp}
         <div class="card status ${ws.state === 'due' ? 'due' : 'good'}">${I.html('water')}<div class="grow"><b>${esc(ws.label)}</b><div class="small muted">Needs ${def.water} water${C.isEstablishing(rec) ? ', more while establishing' : ''}.</div></div>
           <button class="btn" id="pc-water" ${rec.lastWatered === Y.todayStr() ? 'disabled' : ''}>${rec.lastWatered === Y.todayStr() ? 'Logged' : 'Watered it'}</button></div>
+        ${needs}
+        ${gives.length ? `<div class="card"><h3>What it gives</h3><p class="small">${esc(gives.join(' '))}</p></div>` : ''}
         <p>${esc(def.notes)}</p>
-        ${def.hostFor ? `<div class="card small"><b>Caterpillar host plant</b> for ${esc(def.hostFor)}. Chewed leaves mean it's working.</div>` : ''}
         <div class="card"><h3>Calendar</h3>${calendar(def)}</div>
         ${facts(def)}
         ${def.harvestable ? `<div class="card status good"><div class="grow"><b>Harvests: ${rec.harvests.length}</b><div class="small muted">${rec.harvests.length ? 'Last ' + fmtDate(rec.harvests[rec.harvests.length - 1]) : 'Nothing picked yet'}</div></div><button class="btn gold" id="pc-harvest">Log harvest</button></div>` : ''}
@@ -925,7 +961,7 @@
           <textarea class="search" id="pc-note" placeholder="What did you notice? New growth, pests, first bloom…" maxlength="500"></textarea>
           <div class="row" style="margin-top:8px"><button class="btn" id="pc-add-note">Add note</button></div>
           <div class="notes" style="margin-top:8px">${notes.map(n => `<div class="note"><time>${fmtDate(n.date)}</time>${esc(n.text)}</div>`).join('') || '<span class="small muted">No notes yet.</span>'}</div></div>
-        <div class="row"><button class="btn alt" id="pc-locate">Show on map</button>${buy}<button class="btn danger" id="pc-died">It died</button><button class="btn danger" id="pc-dig">Dig up</button></div>`,
+        <div class="row"><button class="btn alt" id="pc-locate">Show on map</button><button class="btn alt" id="pc-move">Move it</button>${buy}<button class="btn danger" id="pc-died">It died</button><button class="btn danger" id="pc-dig">Dig up</button></div>`,
       bind() {
         const at = { x, y };
         const w = $('pc-water'); if (w) w.onclick = () => waterAt(at);
@@ -942,6 +978,14 @@
           persist();
         };
         $('pc-locate').onclick = () => { closeSheet(); centerOn(x, y, Math.max(cam.s, 2)); ui.selected = at; requestDraw(); };
+        $('pc-move').onclick = () => {
+          closeSheet(); setTool('build'); selectBrush('move');
+          ui.moving = { kind: 'plant', from: at };
+          centerOn(x, y, Math.max(cam.s, 1.6));
+          toast(`Moving your <b>${esc(def.name)}</b>. Tap where it should go.`);
+        };
+        const back = $('pc-back');
+        if (back) back.onclick = () => { ui.gardenTab = 'plants'; openSheet('garden'); };
         $('pc-died').onclick = async () => {
           const cause = await dialog(`<h3>Sorry about your ${esc(def.name)}</h3><p class="small">Recording what happened helps you pick better next time. It stays in your journal.</p>`,
             ['Too dry', 'Too wet', 'Freeze', 'Pests', 'Not sure'].map(c => ({ label: c, cls: 'alt', value: c })).concat([{ label: 'Cancel', value: null }]));
@@ -1006,12 +1050,14 @@
         ${monthly.length ? `<div class="section-title">This month</div>${monthly.map(row).join('')}` : ''}
         <div class="section-title">This week</div>
         ${ahead.length ? ahead.join('') : `<p class="small muted">No hand watering expected this week.${plan.rainFed ? ` Your ${plan.rainFed} established plant${plan.rainFed === 1 ? '' : 's'} live on rain.` : ''}</p>`}
-        ${trip ? `<div class="card"><b>Away ${dShort(trip.start)} to ${dShort(trip.end)}.</b> <button class="linkbtn" data-ttab-go="trip">See the watering plan</button></div>` : ''}`,
+        ${trip ? `<div class="card"><b>Away ${dShort(trip.start)} to ${dShort(trip.end)}.</b> <button class="linkbtn" data-ttab-go="trip">See the watering plan</button></div>` : ''}
+        <p class="small muted">Every plant's next step is in <button class="linkbtn" id="td-plants">Garden &gt; Plants</button>.</p>`,
       bind(body) {
         body.querySelectorAll('[data-done]').forEach(b => b.onclick = () => {
           snapshot();
           if (G.completeQuest(b.dataset.done, ui.weather)) persist(); else Y.dropCheckpoint();
         });
+        $('td-plants').onclick = () => { ui.gardenTab = 'plants'; openSheet('garden'); };
         const go = body.querySelector('[data-ttab-go]');
         if (go) go.onclick = () => { ui.todoTab = 'trip'; renderSheet(true); };
         const show = body.querySelector('[data-show]');
@@ -1108,15 +1154,54 @@
 
   // garden: report / badges / journal / more ----------------------------
   function renderGarden() {
-    const tabs = [['report', 'Report'], ['badges', 'Badges'], ['journal', 'Journal'], ['more', 'More']];
+    const tabs = [['plants', 'Plants'], ['report', 'Report'], ['badges', 'Badges'], ['journal', 'Journal'], ['more', 'More']];
     const seg = `<div class="seg">${tabs.map(([k, l]) => `<button data-tab="${k}" class="${ui.gardenTab === k ? 'active' : ''}">${l}</button>`).join('')}</div>`;
-    const part = { report: gardenReport, badges: gardenBadges, journal: gardenJournal, more: gardenMore }[ui.gardenTab]();
+    const part = { plants: gardenPlants, report: gardenReport, badges: gardenBadges, journal: gardenJournal, more: gardenMore }[ui.gardenTab]();
     return {
       title: 'Your garden',
       html: seg + part.html,
       bind(body) {
         body.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { ui.gardenTab = b.dataset.tab; renderSheet(true); });
         if (part.bind) part.bind(body);
+      },
+    };
+  }
+
+  // every plant with its next action and when; tap one for its dashboard
+  const GROUPS = { today: 'Needs you today', week: 'This week', month: 'This month', later: 'Later' };
+  function gardenPlants() {
+    const rows = C.gardenDashboard(ui.weather);
+    if (!rows.length) return { html: '<p class="muted">No plants yet. Open the Plant shop, or map what already grows with "Already in my yard".</p>' };
+    const m = month();
+    const inBloom = p => Y.growthStage(p.rec) === 3 && p.def.bloom !== p.def.color;
+    const blooming = rows.filter(r => inBloom(r.p)).length;
+    const establishing = rows.filter(r => C.isEstablishing(r.p.rec)).length;
+    const thirsty = rows.filter(r => r.agenda.some(a => a.kind === 'water' && a.urgent)).length;
+    let html = `<div class="tiles">
+        <div class="tile ${thirsty ? 'warn' : ''}"><b>${thirsty}</b><span>need water today</span></div>
+        <div class="tile"><b>${blooming}</b><span>blooming now</span></div>
+        <div class="tile"><b>${establishing}</b><span>still establishing</span></div>
+        <div class="tile"><b>${rows.length}</b><span>plants</span></div></div>`;
+    for (const g of Object.keys(GROUPS)) {
+      const list = rows.filter(r => r.group === g);
+      if (!list.length) continue;
+      html += `<div class="section-title">${GROUPS[g]} (${list.length})</div><div class="list">${list.map(r => {
+        const { p, next } = r;
+        const badges = [inBloom(p) ? '<span class="tag now">Blooming</span>' : '',
+          C.isEstablishing(p.rec) ? `<span class="tag">Day ${Y.daysSince(p.rec.planted) + 1} of ${p.def.establishDays} settling in</span>` : ''].join('');
+        return `<button class="item prow" data-plant="${p.x},${p.y}">${swatchImg(p.def, '', Y.growthStage(p.rec))}
+          <span class="grow"><span class="name">${esc(p.def.name)}</span>
+          <span class="next ${r.group}">${next ? `${next.date ? `<b>${C.whenLabel(next)}</b> · ` : ''}${esc(next.text)}` : 'Nothing to do'}</span>
+          ${badges ? `<span class="tags">${badges}</span>` : ''}</span></button>`;
+      }).join('')}</div>`;
+    }
+    return {
+      html: html + '<p class="small muted">Watering dates come from each plant\'s needs and the forecast. Tap a plant for everything it needs.</p>',
+      bind(body) {
+        body.querySelectorAll('[data-plant]').forEach(b => b.onclick = () => {
+          const [x, y] = b.dataset.plant.split(',').map(Number);
+          openSheet('plant', { x, y, from: 'garden' });
+        });
       },
     };
   }

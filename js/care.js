@@ -146,6 +146,135 @@
     return { soakOn, helper, rainDays, scheduled: plan.scheduled, rainFed: plan.rainFed, days: e - Math.max(0, s) + 1 };
   }
 
+  // ---------- per-plant agenda: what each plant needs next, and when ----------
+  // Seasonal care, conservative Houston timing. m = months it applies.
+  const TYPE_CARE = {
+    perennial: [{ m: [2], text: 'Cut back last year’s dead stems', why: 'Late February, before new growth. Left up over winter they shelter insects and birds.' }],
+    grass: [{ m: [2], text: 'Cut back to about 6 inches', why: 'Before the new green blades come up.' }],
+    shrub: [{ m: [2], text: 'Shape lightly, only if it needs it', why: 'Late winter, before spring growth. Most natives look best unpruned.' }],
+    vine: [{ m: [2, 3], text: 'Trim back and tie to its support', why: 'Before the spring flush of growth.' }],
+    tree: [{ m: [12, 1], text: 'Check for dead or crossing branches', why: 'Easiest to see with the leaves down. Call an arborist for anything above your head.' }],
+    groundcover: [],
+    edible: [],
+  };
+  const DEADHEAD = { m: null, text: 'Snip off spent flowers', why: 'Keeps new blooms coming.' };
+  const PLANT_CARE = {
+    liveoak: { replace: true, tasks: [{ m: [7, 8, 9, 10, 11, 12, 1], text: 'Prune only now, if it needs it (never Feb–June)', why: 'Oak wilt spreads through fresh cuts in spring. Paint every cut.' }] },
+    crapemyrtle: { replace: true, tasks: [{ m: [1, 2], text: 'Remove suckers and small twigs only; never top it', why: 'Topping ("crape murder") weakens it and ruins the shape.' }] },
+    knockoutrose: { replace: true, tasks: [{ m: [2], text: 'Cut back by about a third', why: 'Mid-February, for fresh blooming growth.' },
+      { m: [4, 5, 6, 7, 8, 9, 10], text: 'Check new growth for rose rosette', why: 'Bunched, red, very thorny new shoots: remove the whole plant.' }] },
+    firebush: { replace: true, tasks: [{ m: [3], text: 'Cut frozen stems back once new growth shows', why: 'It regrows from the base after a freeze.' }] },
+    esperanza: { replace: true, tasks: [{ m: [3], text: 'Cut frozen stems back once new growth shows', why: 'It regrows from the base after a freeze.' }] },
+    plumbago: { replace: true, tasks: [{ m: [3], text: 'Cut frozen stems back once new growth shows', why: 'It regrows from the base after a freeze.' }] },
+    caladium: { replace: true, tasks: [{ m: [10, 11], text: 'Let it go dormant, or dig and store the tubers', why: 'The leaves fade in fall. Replant in warm soil next April.' }] },
+    basil: { tasks: [{ m: [6, 7, 8, 9], text: 'Pinch off flower spikes', why: 'Keeps the leaves coming.' }] },
+    coneflower: { tasks: [{ m: [9, 10, 11], text: 'Leave the seed heads standing', why: 'Goldfinches eat the seed in fall.' }] },
+    blackeyedsusan: { tasks: [{ m: [9, 10], text: 'Let a few heads drop seed', why: 'It reseeds itself for next year.' }] },
+    sunflower: { tasks: [{ m: [9, 10, 11], text: 'Leave the heads for the birds', why: 'Goldfinches and cardinals eat the seed.' }] },
+  };
+  const DEADHEADS = ['autumnsage', 'mealysage', 'scarletsage', 'blackandblue', 'pentas', 'zinnia', 'knockoutrose'];
+  const ALL_CARE = [{ m: [4, 5], text: 'Mulch 2–3 inches deep', why: 'Holds moisture through summer and keeps roots cool. Keep it off the stems.' }];
+
+  const ANNUAL_CARE = [{ m: [12, 1], text: 'Pull and compost it after a hard freeze', why: 'It’s an annual here. Replant in spring.' }];
+  function careTasks(def) {
+    const own = PLANT_CARE[def.id];
+    const base = def.life === 'annual' || def.life === 'reseeds' ? (def.type === 'edible' ? [] : ANNUAL_CARE) : TYPE_CARE[def.type] || [];
+    const tasks = (own && own.replace ? [] : base).concat(own ? own.tasks : []);
+    if (DEADHEADS.includes(def.id)) tasks.push(Object.assign({}, DEADHEAD, { m: def.bloomMonths }));
+    return def.type === 'tree' ? tasks : tasks.concat(ALL_CARE);
+  }
+
+  const isoOf = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  function plusDays(iso, n) { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return isoOf(d); }
+  // today if this month is listed, else the 1st of the next listed month
+  function nextInMonths(months) {
+    const now = new Date(), m = now.getMonth() + 1;
+    if (months.includes(m)) return Y().todayStr();
+    for (let i = 1; i <= 12; i++) {
+      if (months.includes(((m - 1 + i) % 12) + 1)) return isoOf(new Date(now.getFullYear(), now.getMonth() + i, 1, 12));
+    }
+    return null;
+  }
+
+  // [{ date (ISO or null), kind, text, why, month (a this-month task), urgent }]
+  // soonest first. sched: a waterSchedule() to read the next watering from.
+  function plantAgenda(p, w, sched) {
+    const { rec, def } = p, today = Y().todayStr(), out = [];
+    // water
+    const ws = waterStatus(rec, w), establishing = isEstablishing(rec);
+    if (ws.state === 'due') out.push({ date: today, kind: 'water', text: 'Water it', why: ws.label + '.', urgent: true });
+    else if (ws.state === 'rainfed') out.push({ date: null, kind: 'water', text: 'No hand watering', why: 'Established, so it lives on rain. Water only in a long dry spell.' });
+    else {
+      sched = sched || waterSchedule(w, 31);
+      const next = Object.keys(sched.byDate).sort().find(d => sched.byDate[d].some(x => x.key === p.key));
+      const every = establishing ? 2 : INTERVAL[def.water];
+      if (next) out.push({ date: next, kind: 'water', text: 'Water it', why: `${ws.state === 'rain' || ws.state === 'rainsoon' ? ws.label + '. ' : ''}About every ${every} days${establishing ? ' until its roots establish' : ''}.` });
+    }
+    // freeze
+    if (def.tender) {
+      const f = w && !w.fallback && w.forecast ? w.forecast.find(d => d.loF <= 32) : null;
+      if (f) out.push({ date: f.date, kind: 'freeze', text: 'Cover it the night before the freeze', why: `Low of ${Math.round(f.loF)}°F forecast. Frost cloth or a sheet, off again in the morning.`, urgent: dayIndex(f.date) <= 1 });
+      else { const d = nextInMonths([12, 1, 2]); if (d) out.push({ date: d, kind: 'freeze', text: 'Cover it when a freeze is forecast', why: 'A hard freeze damages it. Watch the forecast December through February.', month: true }); }
+    }
+    // growth
+    if (establishing) out.push({ date: plusDays(rec.planted, def.establishDays), kind: 'grow', text: 'Roots established', why: 'After this it needs far less water.' });
+    if (def.harvestDays) {
+      const ready = plusDays(rec.planted, def.harvestDays);
+      if (ready > today) out.push({ date: ready, kind: 'harvest', text: 'First harvest, about now', why: `About ${def.harvestDays} days from planting.` });
+      else out.push({ date: today, kind: 'harvest', text: 'Pick what’s ready', why: 'Picking often keeps it producing. Log it for XP.', month: true });
+    }
+    // seasonal care
+    for (const t of careTasks(def)) {
+      const d = nextInMonths(t.m);
+      if (d) out.push({ date: d, kind: 'care', text: t.text, why: t.why, month: true });
+    }
+    // site: wrong light for this plant
+    const sun = Y().sunAt(p.x, p.y);
+    if (def.type !== 'tree' && !def.sunRange.includes(sun.level)) {
+      const more = def.sunRange.includes('full') ? 'sun' : 'shade';
+      out.push({ date: nextInMonths([10, 11, 12, 1, 2]), kind: 'site', text: `Move it somewhere with more ${more}`,
+        why: `This spot gets about ${Math.round(sun.hours || 0)} hours of sun; it needs ${def.sunRange.map(l => LIGHT[l]).join(' or ')}. Fall and winter are the gentlest time to transplant.` });
+    }
+    // urgent, then anything dated this week, then this month's chores, then later
+    const rank = a => {
+      if (!a.date) return 9;
+      const i = dayIndex(a.date);
+      if (a.urgent) return i / 100;
+      if (!a.month && i <= 6) return 1 + i / 10;
+      if (a.month && i <= 0) return 2;
+      return 3 + i / 1000;
+    };
+    return out.sort((a, b) => rank(a) - rank(b));
+  }
+
+  // when label: Today, Tomorrow, Thu, Oct 22, This month, Feb
+  function whenLabel(a) {
+    if (!a.date) return '';
+    const i = dayIndex(a.date);
+    if (a.month) return i <= 0 ? 'This month' : new Date(a.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short' });
+    if (i <= 0) return 'Today';
+    if (i === 1) return 'Tomorrow';
+    const d = new Date(a.date + 'T12:00:00');
+    return i < 7 ? d.toLocaleDateString('en-US', { weekday: 'short' }) : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
+  // Every plant with its agenda, grouped: needs you today / this week / later
+  function gardenDashboard(w) {
+    const sched = waterSchedule(w, 31);
+    const rows = Y().allPlants().map(p => {
+      const agenda = plantAgenda(p, w, sched);
+      const next = agenda.find(a => a.date) || agenda[0] || null;
+      const i = next && next.date ? dayIndex(next.date) : 99;
+      const group = !next || !next.date ? 'later'
+        : next.urgent || (i <= 0 && !next.month) ? 'today'
+          : !next.month && i <= 6 ? 'week' : next.month && i <= 0 ? 'month' : 'later';
+      return { p, agenda, next, group, days: i };
+    });
+    const order = { today: 0, week: 1, month: 2, later: 3 };
+    rows.sort((a, b) => order[a.group] - order[b.group] || a.days - b.days || a.p.def.name.localeCompare(b.p.def.name));
+    return rows;
+  }
+
   // 'the house' | 'a fence' | 'your Live Oak' | ''
   function shadeFrom(by) {
     if (!by) return '';
@@ -329,6 +458,6 @@
 
   window.CARE = {
     MONTHS, LIGHT, monthList, waterStatus, waterInterval, isEstablishing, thirstyPlants, plantingWarnings, insights, thisMonth,
-    sunLabel, lifeLabel, shadeFrom, waterSchedule, tripPlan, BUY_LABEL, BUY_TEXT, gardenContext, scorePlant, rankPlants,
+    sunLabel, lifeLabel, shadeFrom, waterSchedule, tripPlan, plantAgenda, whenLabel, gardenDashboard, BUY_LABEL, BUY_TEXT, gardenContext, scorePlant, rankPlants,
   };
 })();
