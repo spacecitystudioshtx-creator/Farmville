@@ -338,9 +338,9 @@
     drawPlant(ctx, plantDef, x, y, stage) {
       const img = window.ART && window.ART.plant(plantDef.id, stage);
       if (img) {
-        // draw at 2x native pixel density, anchored bottom-center of the tile,
-        // so tall/wide sprites (trees, sunflowers) rise out of their tile
-        const w = img.width * 2, h = img.height * 2;
+        // anchored bottom-center of the tile, so tall/wide sprites (trees,
+        // sunflowers) rise out of their tile
+        const k = window.ART.plantScale(), w = img.width * k, h = img.height * k;
         ctx.drawImage(img, x * TILE + TILE / 2 - w / 2, (y + 1) * TILE - h + 2, w, h);
         return;
       }

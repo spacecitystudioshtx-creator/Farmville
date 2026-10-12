@@ -104,32 +104,27 @@ double down on the one that does. Time the big pushes to the two gardening surge
 
 ## What the app does
 
-- **8-bit yard map** (1 tile = 3 ft) with neighbor-aware tiles: timber-edged
-  beds, flagstone paths, shingled roof with ridge caps, front walls with
-  windows and a door where the walk arrives, a picket fence around the lot,
-  drop shadows under every plant, and mow-stripes on the lawn. All sprites are
-  procedural by default; drop image art into `assets/art/` (PixelLab exports,
-  Sprout Lands, commissioned tiles) and it's used automatically with per-asset
-  procedural fallback — see [ART_PIPELINE.md](ART_PIPELINE.md).
-- **Installable PWA**: manifest + service worker give "Add to Home Screen",
-  offline app shell, and a web-push-ready foundation for frost alerts.
-- **Growth simulation on real time**: sprites advance sprout → establishing →
-  established using actual days since planting, and show bloom sprites in each
-  species' real bloom months.
-- **Region-scoped catalog**: ~25 Gulf Coast natives + the Harris County
-  fall/spring vegetable calendar, with real planting windows, sun/water needs,
-  spacing, and local notes.
-- **Live weather** (Open-Meteo, keyless): current conditions, 7-day forecast,
-  past-7-day rainfall.
-- **Task engine**: frost & extreme-heat alerts, rainfall-aware watering
-  reminders with a per-tile watering log, "plant now" counts, Houston monthly
-  chores.
-- **Claude onboarding**: [GARDEN_INTERVIEW.md](GARDEN_INTERVIEW.md) contains a
-  prompt that interviews you about your real yard and emits importable JSON —
-  no manual painting needed.
-- **Import / Export / Share**: JSON backup and restore, one-click PNG export of
-  your pixel yard (the social growth hook).
-- **Persistence** via localStorage.
+- **Full-screen pixel yard** for phones: pinch to zoom, drag to pan, toolbar at
+  the bottom (Look, Plant, Water, Build, Quests, Garden), pop-up panels.
+- **Real gardening, game rewards**: XP and levels for real chores, a daily
+  streak, 12 badges and daily quests that adapt to rain and season. Nothing is
+  rewarded that would hurt the real garden.
+- **Plant cards**: growth stage, watering status, bloom and planting calendar,
+  care notes, harvest log, "it died" history.
+- **Smart planting warnings**: tree shade, out-of-season planting, crowding, big
+  trees too close to the house. A shade map shows what your trees cover.
+- **Garden report**: native share, wildlife plants, months in bloom, and natives
+  that would fill bloom gaps. Journal of everything you've done.
+- **Live weather** (Open-Meteo) with Houston monthly averages as a fallback.
+- **Welcome flow**: demo yard, blank lot, or describe your yard to Claude.
+- **Undo**, backup/restore, share a picture of your yard, installable PWA.
+
+## Test
+
+```bash
+npm install
+npm test   # end-to-end test flight on a phone and a desktop viewport
+```
 
 ## Files
 
@@ -138,7 +133,10 @@ double down on the one that does. Time the big pushes to the two gardening surge
 - `js/sprites.js` — procedural 8-bit terrain + plant sprites (swap point for real art)
 - `js/grid.js` — yard model, starter layout, growth stages, localStorage
 - `js/weather.js` — Open-Meteo client
-- `js/tasks.js` — task engine (weather alerts, watering logic, monthly chores)
+- `js/care.js` — watering status, planting warnings, garden insights
+- `js/game.js` — XP, levels, streak, badges, quests
+- `js/icons.js` — pixel icons for the UI
+- `tests/e2e.cjs` — end-to-end test flight
 - `js/importer.js` — garden JSON import/export (incl. the Claude interview format)
 - `js/main.js` — UI wiring (canvas, tools, catalog, panels, monetization slots)
 - `GARDEN_INTERVIEW.md` — the Claude onboarding interview prompt

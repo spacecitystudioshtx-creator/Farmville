@@ -23,8 +23,7 @@
     const { W, H } = yard;
     const skipped = [];
 
-    yard.state.terrain = Array.from({ length: H }, () => Array(W).fill('grass'));
-    yard.state.plants = {};
+    yard.emptyLot();
 
     for (const f of data.terrain || []) {
       if (!TERRAIN_TYPES[f.type] || !Array.isArray(f.rect)) { skipped.push('terrain:' + JSON.stringify(f.type)); continue; }
@@ -50,6 +49,8 @@
           id: def.id,
           planted: yard.todayStr(-ageDays),
           lastWatered: ageDays > def.establishDays ? null : yard.todayStr(),
+          notes: [],
+          harvests: [],
         };
         planted++;
       }
@@ -59,17 +60,15 @@
 
   window.IMPORTER = {
     exportText() {
-      const s = Y().state;
-      return JSON.stringify({ v: 1, terrain: s.terrain, plants: s.plants }, null, 1);
+      return Y().serialize();
     },
     importText(text) {
       let data;
       try { data = JSON.parse(text); } catch (e) { return { ok: false, message: 'Not valid JSON: ' + e.message }; }
       try {
         if (data && data.format === 'cliffwood-garden-v1') return applyLayoutSpec(data);
-        if (data && data.v === 1 && Array.isArray(data.terrain) && data.terrain.length === Y().H) {
-          Y().state.terrain = data.terrain;
-          Y().state.plants = data.plants || {};
+        if (data && (data.v === 1 || data.v === 2) && Array.isArray(data.terrain) && data.terrain.length === Y().H) {
+          Y().restore(data);
           return { ok: true, message: 'Save file restored.' };
         }
         return { ok: false, message: 'Unrecognized format — expected "cliffwood-garden-v1" or an app save file.' };

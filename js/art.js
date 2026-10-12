@@ -15,6 +15,7 @@
 window.ART = (function () {
   const cache = {};
   let credit = '';
+  let plantScale = 1; // canvas px per sprite px: 1 for 32px art, 2 for 16px packs
 
   function load(key, url) {
     return new Promise(resolve => {
@@ -72,6 +73,7 @@ window.ART = (function () {
         if (res.ok) {
           const m = await res.json();
           credit = m.credit || '';
+          plantScale = m.plantScale || 1;
           const jobs = [];
           for (const t of m.tiles || []) jobs.push(load('tiles/' + t, `assets/art/tiles/${t}.png`));
           for (const [id, stages] of Object.entries(m.plants || {}))
@@ -86,6 +88,7 @@ window.ART = (function () {
     get(key) { return cache[key] || null; },
     tile(type) { return cache['tiles/' + type] || null; },
     creditLine() { return credit; },
+    plantScale() { return plantScale; },
     // exact species art, then facsimiles, at the nearest available stage
     plant(id, stage) {
       const def = window.PLANT_BY_ID && window.PLANT_BY_ID[id];

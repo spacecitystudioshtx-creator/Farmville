@@ -96,7 +96,7 @@ def main():
     for d in (tiles_dir, plants_dir, extra_dir):
         os.makedirs(d, exist_ok=True)
 
-    manifest = {'credit': CREDIT, 'tiles': [], 'plants': {}, 'extra': {}}
+    manifest = {'credit': CREDIT, 'plantScale': 2, 'tiles': [], 'plants': {}, 'extra': {}}
 
     for name, spec in TILES.items():
         img = crop(a.pack, spec).resize((32, 32), NEAREST)

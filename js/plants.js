@@ -216,3 +216,45 @@ window.PLANTS = [
 ];
 
 window.PLANT_BY_ID = Object.fromEntries(window.PLANTS.map(p => [p.id, p]));
+
+// Wildlife each plant reliably supports in Gulf Coast gardens. Only well-
+// established relationships are listed (nectar, larval host, or fruit/seed);
+// plants with modest or disputed value are left untagged rather than guessed.
+const WILDLIFE = {
+  turkscap: ['hummingbirds', 'butterflies'],
+  txlantana: ['butterflies'],
+  autumnsage: ['hummingbirds', 'bees'],
+  scarletsage: ['hummingbirds', 'butterflies'],
+  mistflower: ['butterflies'],
+  flameacanthus: ['hummingbirds'],
+  blackeyedsusan: ['bees', 'butterflies', 'birds'],
+  coneflower: ['bees', 'butterflies', 'birds'],
+  indianblanket: ['bees', 'butterflies'],
+  winecup: ['bees'],
+  mealysage: ['bees', 'butterflies'],
+  cardinalflower: ['hummingbirds'],
+  aquaticmilkweed: ['butterflies'],
+  frogfruit: ['butterflies', 'bees'],
+  littlebluestem: ['birds'],
+  beautyberry: ['birds'],
+  yaupon: ['birds'],
+  coralhoneysuckle: ['hummingbirds'],
+  passionvine: ['butterflies'],
+  buttonbush: ['bees', 'butterflies'],
+  liveoak: ['birds'],
+  pecan: ['birds'],
+  txredbud: ['bees'],
+  mexicanplum: ['bees', 'birds'],
+  possumhaw: ['birds'],
+};
+// Larval host plants: the species caterpillars need, not just nectar.
+const HOST_FOR = {
+  aquaticmilkweed: 'monarchs',
+  passionvine: 'gulf fritillaries',
+  frogfruit: 'phaon crescents and buckeyes',
+};
+for (const p of window.PLANTS) {
+  p.wildlife = WILDLIFE[p.id] || [];
+  p.hostFor = HOST_FOR[p.id] || null;
+  p.harvestable = p.type === 'edible';
+}

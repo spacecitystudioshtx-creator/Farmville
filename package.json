@@ -1,0 +1,12 @@
+{
+  "name": "gardenstar",
+  "private": true,
+  "description": "The farm game that grows your real garden.",
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "test": "node tests/e2e.cjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.48.0"
+  }
+}
