@@ -142,6 +142,63 @@ window.PLANTS = [
     establishDays: 180, heightFt: 15, spacingFt: 10, color: '#4f7742', bloom: '#e04a30',
     notes: 'Drops its leaves to show off thousands of red berries all winter.' },
 
+  // ---------- Garden-center favorites (what Houston stores stock) ----------
+  { id: 'firebush', name: 'Firebush', botanical: 'Hamelia patens',
+    type: 'shrub', native: false, sun: 'full sun', water: 'low',
+    plantMonths: [4,5,6,7,8,9], bloomMonths: [6,7,8,9,10,11],
+    establishDays: 45, heightFt: 5, spacingFt: 4, color: '#3f6e34', bloom: '#e8501f',
+    notes: 'Orange-red tubes from June to frost; hummingbirds and butterflies. Freezes to the ground in a hard winter and comes back.' },
+  { id: 'esperanza', name: 'Esperanza (Yellow Bells)', botanical: "Tecoma stans 'Gold Star'",
+    type: 'shrub', native: true, sun: 'full sun', water: 'low',
+    plantMonths: [4,5,6,7,8,9], bloomMonths: [5,6,7,8,9,10,11],
+    establishDays: 45, heightFt: 5, spacingFt: 4, color: '#4f7a35', bloom: '#f4c430',
+    notes: 'Texas native with yellow trumpets all summer in full sun and heat. Dies back in a freeze and returns in spring.' },
+  { id: 'pentas', name: 'Pentas', botanical: 'Pentas lanceolata',
+    type: 'perennial', native: false, sun: 'full sun', water: 'medium',
+    plantMonths: [4,5,6,7,8,9], bloomMonths: [5,6,7,8,9,10,11],
+    establishDays: 30, heightFt: 1.5, spacingFt: 1.5, color: '#3f7a3a', bloom: '#e0457b',
+    notes: 'Star-flower clusters in red, pink or white from spring to frost. One of the best butterfly plants you can buy in a six-pack.' },
+  { id: 'blackandblue', name: "Salvia 'Black and Blue'", botanical: "Salvia guaranitica 'Black and Blue'",
+    type: 'perennial', native: false, sun: 'part shade', water: 'medium',
+    plantMonths: [3,4,5,9,10], bloomMonths: [5,6,7,8,9,10,11],
+    establishDays: 45, heightFt: 3, spacingFt: 2, color: '#3f7040', bloom: '#3a3fb0',
+    notes: 'Deep blue flowers on near-black stems. A top hummingbird plant for part shade.' },
+  { id: 'plumbago', name: 'Plumbago', botanical: 'Plumbago auriculata',
+    type: 'shrub', native: false, sun: 'full sun', water: 'low',
+    plantMonths: [3,4,5,9,10], bloomMonths: [4,5,6,7,8,9,10,11],
+    establishDays: 45, heightFt: 4, spacingFt: 4, color: '#4f7d45', bloom: '#9cc3ec',
+    notes: 'Sky-blue flowers spring to frost; butterflies. Freezes back in a hard winter and regrows.' },
+  { id: 'knockoutrose', name: 'Knock Out Rose', botanical: "Rosa 'Radrazz'",
+    type: 'shrub', native: false, sun: 'full sun', water: 'medium',
+    plantMonths: [10,11,12,1,2,3,4], bloomMonths: [3,4,5,6,7,8,9,10,11],
+    establishDays: 60, heightFt: 4, spacingFt: 4, color: '#3d6e3a', bloom: '#d6305a',
+    notes: 'The low-care rose sold everywhere; blooms in flushes spring to fall. If you see bunched red witches\'-broom growth (rose rosette), remove the plant.' },
+  { id: 'zinnia', name: 'Zinnia', botanical: 'Zinnia elegans',
+    type: 'perennial', native: false, sun: 'full sun', water: 'medium',
+    plantMonths: [3,4,5,6,7,8], bloomMonths: [5,6,7,8,9,10],
+    establishDays: 21, heightFt: 2.5, spacingFt: 1, color: '#4e8a3c', bloom: '#f25c3a',
+    notes: 'The cheapest color there is: one seed packet fills a bed by June. Butterflies love them, and cutting makes more.' },
+  { id: 'sunflower', name: 'Sunflower', botanical: 'Helianthus annuus',
+    type: 'perennial', native: true, sun: 'full sun', water: 'medium',
+    plantMonths: [3,4,5,8], bloomMonths: [6,7,8,9,10,11],
+    establishDays: 21, heightFt: 6, spacingFt: 1.5, color: '#4f8a35', bloom: '#f2c12e',
+    notes: 'Native annual. Sow seed straight in the ground after the last frost; bees and goldfinches work the heads.' },
+  { id: 'caladium', name: 'Caladium', botanical: 'Caladium bicolor',
+    type: 'perennial', native: false, sun: 'shade', water: 'medium',
+    plantMonths: [4,5,6], bloomMonths: [],
+    establishDays: 30, heightFt: 1.5, spacingFt: 1, color: '#5c8a4a', bloom: '#e57aa0',
+    notes: 'Pink, red or white leaves for shade from May to October. Plant tubers once the soil is warm, after mid-April.' },
+  { id: 'crapemyrtle', name: 'Crape Myrtle', botanical: 'Lagerstroemia indica',
+    type: 'tree', native: false, sun: 'full sun', water: 'low',
+    plantMonths: [10,11,12,1,2,3], bloomMonths: [6,7,8,9],
+    establishDays: 365, heightFt: 20, spacingFt: 15, color: '#4a7a3c', bloom: '#d9559a',
+    notes: 'Houston\'s summer flowering tree. Buy a variety sized for the spot so it never needs topping.' },
+  { id: 'rosemary', name: 'Rosemary', botanical: 'Salvia rosmarinus',
+    type: 'edible', native: false, sun: 'full sun', water: 'low',
+    plantMonths: [2,3,4,10,11], bloomMonths: [12,1,2,3],
+    establishDays: 45, heightFt: 3, spacingFt: 3, color: '#4d6e57', bloom: '#8fa6e0',
+    notes: 'Evergreen herb shrub. Needs sharp drainage, so plant it high in clay. Bees work the winter flowers.' },
+
   // ---------- Edibles (Harris County fall/spring calendar) ----------
   { id: 'falltomato', name: 'Tomato (fall crop)', botanical: 'Solanum lycopersicum',
     type: 'edible', native: false, sun: 'full sun', water: 'high',
@@ -246,6 +303,15 @@ const WILDLIFE = {
   txredbud: ['bees'],
   mexicanplum: ['bees', 'birds'],
   possumhaw: ['birds'],
+  firebush: ['hummingbirds', 'butterflies'],
+  esperanza: ['bees', 'hummingbirds'],
+  pentas: ['butterflies', 'hummingbirds'],
+  blackandblue: ['hummingbirds', 'bees'],
+  plumbago: ['butterflies'],
+  zinnia: ['butterflies', 'bees'],
+  sunflower: ['bees', 'birds'],
+  crapemyrtle: ['bees'],
+  rosemary: ['bees'],
 };
 // Larval host plants: the species caterpillars need, not just nectar.
 const HOST_FOR = {
@@ -260,6 +326,7 @@ const LIFE = {
   falltomato: 'annual', pepper: 'annual', bushbeans: 'annual', cucumber: 'annual', squash: 'annual',
   broccoli: 'annual', kale: 'annual', lettuce: 'annual', carrot: 'annual', radish: 'annual',
   spinach: 'annual', garlic: 'annual', cilantro: 'annual', basil: 'annual',
+  pentas: 'annual', zinnia: 'annual', sunflower: 'annual', caladium: 'annual', rosemary: 'woody',
 };
 // Light each plant tolerates in Houston: full = 6+ hours of sun, part = 3-6,
 // shade = under 3. `sun` above is the light it does best in.
@@ -275,12 +342,35 @@ const SUN_RANGE = {
   falltomato: 'full', pepper: 'full', bushbeans: 'full', cucumber: 'full', squash: 'full',
   broccoli: 'full', garlic: 'full', kale: 'full part', lettuce: 'full part', carrot: 'full part',
   radish: 'full part', spinach: 'full part', cilantro: 'full part', basil: 'full part',
+  firebush: 'full part', esperanza: 'full', pentas: 'full part', blackandblue: 'full part',
+  plumbago: 'full part', knockoutrose: 'full', zinnia: 'full', sunflower: 'full',
+  caladium: 'part shade', crapemyrtle: 'full', rosemary: 'full',
+};
+// Where you can actually buy it in Houston (typical stock, not live inventory):
+// 'bigbox' = Home Depot / Lowe's garden centers in season, 'seed' = seed racks
+// and online (Amazon etc.), 'nursery' = independent and native-plant nurseries.
+// Listed most common first.
+const BUY = {
+  turkscap: 'bigbox nursery', gcmuhly: 'bigbox nursery', txlantana: 'nursery', autumnsage: 'bigbox nursery',
+  scarletsage: 'seed nursery', mistflower: 'nursery', flameacanthus: 'nursery', blackeyedsusan: 'bigbox seed',
+  coneflower: 'bigbox seed', indianblanket: 'seed', winecup: 'nursery', mealysage: 'bigbox seed',
+  cardinalflower: 'nursery', aquaticmilkweed: 'nursery', frogfruit: 'nursery', seaoats: 'bigbox nursery',
+  littlebluestem: 'nursery seed', beautyberry: 'nursery', yaupon: 'bigbox nursery', coralhoneysuckle: 'bigbox nursery',
+  passionvine: 'nursery seed', buttonbush: 'nursery', liveoak: 'bigbox nursery', pecan: 'bigbox nursery',
+  txredbud: 'bigbox nursery', mexicanplum: 'nursery', possumhaw: 'nursery',
+  firebush: 'bigbox', esperanza: 'bigbox', pentas: 'bigbox', blackandblue: 'bigbox', plumbago: 'bigbox',
+  knockoutrose: 'bigbox', zinnia: 'seed bigbox', sunflower: 'seed', caladium: 'bigbox', crapemyrtle: 'bigbox',
+  rosemary: 'bigbox',
+  falltomato: 'bigbox', pepper: 'bigbox', bushbeans: 'seed', cucumber: 'bigbox seed', squash: 'bigbox seed',
+  broccoli: 'bigbox', kale: 'bigbox seed', lettuce: 'bigbox seed', carrot: 'seed', radish: 'seed',
+  spinach: 'seed', garlic: 'seed', cilantro: 'bigbox seed', basil: 'bigbox seed',
 };
 const SUN_LEVEL = { 'full sun': 'full', 'part shade': 'part', shade: 'shade' };
 for (const p of window.PLANTS) {
   p.life = LIFE[p.id] || (['tree', 'shrub', 'vine'].includes(p.type) ? 'woody' : 'perennial');
   p.sunPref = SUN_LEVEL[p.sun];
   p.sunRange = (SUN_RANGE[p.id] || p.sunPref).split(' ');
+  p.buy = (BUY[p.id] || 'nursery').split(' ');
   p.wildlife = WILDLIFE[p.id] || [];
   p.hostFor = HOST_FOR[p.id] || null;
   p.harvestable = p.type === 'edible';

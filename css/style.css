@@ -331,6 +331,9 @@ input, textarea { -webkit-user-select: text; user-select: text; }
 .tag.edible { background: #f3c99e; color: #6b3412; }
 .tag.wild { background: #d6e6f2; color: #1d4f78; }
 .tag.life { background: #e7dcc4; color: #5a4320; }
+.tag.buy { background: #f0d9c8; color: #7a3d14; }
+.tag.buy-bigbox { background: #f7c9a4; color: #6b2e08; }
+.tag.buy-nursery { background: #e2e2d4; color: #4b4b3a; }
 .tag.sun { background: #fbe7a6; color: #6b4b00; }
 .tag.sun-full-part, .tag.sun-full-part-shade { background: linear-gradient(90deg, #fbe7a6, #d9dccb); }
 .tag.sun-part, .tag.sun-part-shade { background: #d9dccb; color: #3d4a2f; }

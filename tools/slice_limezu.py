@@ -78,6 +78,12 @@ PLANTS = {
     'beautyberry': SHRUB, 'yaupon': SHRUB, 'buttonbush': SHRUB,
     'winecup': GROUND, 'frogfruit': GROUND,
     'coralhoneysuckle': VINE, 'passionvine': VINE,
+    # garden-center favorites
+    'firebush': SHRUB, 'esperanza': SHRUB, 'plumbago': SHRUB, 'knockoutrose': SHRUB,
+    'pentas': TALL_FLOWER, 'blackandblue': TALL_FLOWER, 'zinnia': TALL_FLOWER, 'sunflower': TALL_FLOWER,
+    'caladium': LOW_FLOWER,
+    'crapemyrtle': [crop('cabbage', 2), tree('tall_sapling'), tree('tall_plain'), tree('tall_fruit', 'orange')],
+    'rosemary': [crop('pepper', 2), crop('pepper', 3), crop('berrybush', 3), crop('berrybush', 4, 'red')],
     # trees
     'liveoak': [crop('cabbage', 2), tree('dense_sapling'), tree('dense_plain'), tree('dense_plain')],
     'pecan': [crop('cabbage', 2), tree('apple_sapling'), tree('apple_plain'), tree('apple_plain')],

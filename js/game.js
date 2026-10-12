@@ -74,10 +74,10 @@
   // silent: unlock without XP or celebration (what the starting yard already
   // satisfies isn't something the player did)
   function checkBadges(extra, silent) {
-    const ins = C().insights();
+    const ins = C().insights(true);
     const ctx = {
       ins,
-      pollinatorPlants: Y().allPlants().filter(p => p.def.wildlife.some(t => t !== 'birds')).length,
+      pollinatorPlants: Y().allPlants().filter(p => !p.rec.offSeason && p.def.wildlife.some(t => t !== 'birds')).length,
       plantedTree: Y().state.journal.some(j => j.type === 'planted' && window.PLANT_BY_ID[j.plantId] && window.PLANT_BY_ID[j.plantId].type === 'tree'),
       ...(extra || {}),
     };
@@ -214,8 +214,8 @@
     // -> { xp, reason }
     planted(def, at) {
       rollDay();
-      g.totals.planted++;
       const inSeason = def.plantMonths.includes(C().thisMonth());
+      if (inSeason) g.totals.planted++; // First Sprout pays only for an in-season planting
       let xp = 0, reason;
       if (!inSeason) reason = 'Out of season: no XP';
       else if (def.native) { xp = XP.plantNative; reason = 'Planted a native in season'; g.day.nativePlanted++; }

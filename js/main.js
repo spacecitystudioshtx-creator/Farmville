@@ -601,7 +601,7 @@
     if (ui.shopFilter === 'wildlife') list = list.filter(p => p.wildlife.length);
     if (ui.shopFilter === 'edible') list = list.filter(p => p.type === 'edible');
     if (ui.shopFilter === 'tree') list = list.filter(p => p.type === 'tree' || (p.type === 'shrub' && p.heightFt >= 8));
-    if (q) list = list.filter(p => (p.name + ' ' + p.botanical + ' ' + p.wildlife.join(' ') + ' ' + C.lifeLabel(p) + ' ' + C.sunLabel(p)).toLowerCase().includes(q));
+    if (q) list = list.filter(p => (p.name + ' ' + p.botanical + ' ' + p.wildlife.join(' ') + ' ' + C.lifeLabel(p) + ' ' + C.sunLabel(p) + ' ' + p.buy.map(b => C.BUY_LABEL[b]).join(' ')).toLowerCase().includes(q));
     // mapping what already grows: you're looking for a name, so A to Z
     if (ui.plantMode === 'existing') return { ctx: null, ranked: list.sort((a, b) => a.name.localeCompare(b.name)).map(def => ({ def })) };
     // new planting: ranked like a gardener would advise, for a tapped spot or the whole yard
@@ -618,6 +618,7 @@
     if (def.native) t.push('<span class="tag native">Native</span>');
     if (def.type === 'edible') t.push('<span class="tag edible">Edible</span>');
     t.push(`<span class="tag life">${C.lifeLabel(def)}</span>`);
+    t.push(`<span class="tag buy buy-${def.buy[0]}">${C.BUY_LABEL[def.buy[0]]}</span>`);
     t.push(`<span class="tag sun sun-${def.sunRange.join('-')}">${C.sunLabel(def)}</span>`);
     t.push(def.plantMonths.includes(m) ? '<span class="tag now">Plant now</span>' : '<span class="tag off">Not now</span>');
     for (const w of def.wildlife) t.push(`<span class="tag wild">${w}</span>`);
@@ -686,6 +687,7 @@
   function facts(def) {
     return `<dl class="facts"><dt>Sun</dt><dd>${C.sunLabel(def)}${def.sunRange.length > 1 ? ` (best in ${C.LIGHT[def.sunPref]})` : ''}</dd>
       <dt>Lifespan</dt><dd>${{ perennial: 'Perennial: comes back every year', annual: 'Annual: one season, replant each year', reseeds: 'Annual that reseeds itself if you let it drop seed', woody: C.lifeLabel(def) + ': permanent, woody' }[def.life]}</dd>
+      <dt>Where to buy</dt><dd>${def.buy.map(b => C.BUY_TEXT[b]).join('. ')}.</dd>
       <dt>Water</dt><dd>${cap(def.water)}</dd>
       <dt>Size</dt><dd>${def.heightFt} ft tall · space ${def.spacingFt} ft apart</dd>
       <dt>Plant</dt><dd>${C.monthList(def.plantMonths)}</dd>

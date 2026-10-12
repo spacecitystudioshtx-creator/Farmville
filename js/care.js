@@ -104,8 +104,14 @@
     if (r.length === 1) return LIGHT[r[0]].charAt(0).toUpperCase() + LIGHT[r[0]].slice(1);
     return r[0] === 'full' ? 'Sun or part shade' : 'Part shade to shade';
   }
+  const BUY_LABEL = { bigbox: 'Big-box store', seed: 'Seed packet', nursery: 'Native nursery' };
+  const BUY_TEXT = {
+    bigbox: 'Usually stocked at Home Depot and Lowe’s garden centers in season',
+    seed: 'Seed racks at big-box stores and online (Amazon and seed companies)',
+    nursery: 'Independent and native-plant nurseries, and plant sales',
+  };
   function lifeLabel(def) {
-    if (def.life === 'woody') return { tree: 'Tree', shrub: 'Shrub', vine: 'Vine' }[def.type];
+    if (def.life === 'woody') return { tree: 'Tree', vine: 'Vine' }[def.type] || 'Shrub';
     return { perennial: 'Perennial', annual: 'Annual', reseeds: 'Reseeding annual' }[def.life];
   }
 
@@ -187,7 +193,12 @@
       else if (ctx.trees >= 4) add(-10, null);
     }
 
-    // 4. goals: natives, wildlife (host plants most of all), food
+    // 4. can you buy it? A pick you can't find this weekend isn't a pick
+    if (def.buy.includes('bigbox')) add(18, 'Sold at Home Depot and Lowe’s');
+    else if (def.buy.includes('seed')) add(10, 'Easy to buy as seed');
+    else add(-10, 'Native nurseries only');
+
+    // 5. goals: natives, wildlife (host plants most of all), food
     if (def.native) add(12, null);
     if (def.hostFor) add(10, `Caterpillar host for ${def.hostFor}`);
     for (const w of def.wildlife) {
@@ -197,15 +208,15 @@
     // food: more so if you already grow some (that's a goal you've shown)
     if (def.type === 'edible' && wait === 0) add(8 + Math.round(12 * ctx.edibleShare), 'Fresh food from this season');
 
-    // 5. what's missing: blooms in months the garden has none
+    // 6. what's missing: blooms in months the garden has none
     const gap = def.bloomMonths.filter(mm => !ctx.bloom[mm - 1]);
     if (gap.length && def.type !== 'edible') add(Math.min(15, gap.length * 3), `Blooms when your garden doesn't (${monthList(gap)})`);
 
-    // 6. ease: Houston summers favor low-water plants once established
+    // 7. ease: Houston summers favor low-water plants once established
     if (def.water === 'low') add(6, 'Low water once established');
     else if (def.water === 'high') add(-4, null);
 
-    // 7. variety: each one you already have counts against another
+    // 8. variety: each one you already have counts against another
     const n = ctx.have[def.id] || 0;
     if (n) add(-Math.min(20, n * 5), `You have ${n} already`);
 
@@ -225,8 +236,9 @@
     };
   }
 
-  function insights() {
-    const plants = Y().allPlants();
+  // forRewards: leave out plants put in out of season, so badges can't pay for them
+  function insights(forRewards) {
+    const plants = Y().allPlants().filter(p => !(forRewards && p.rec.offSeason));
     const total = plants.length;
     const natives = plants.filter(p => p.def.native).length;
     const wildlifeTypes = { butterflies: 0, hummingbirds: 0, bees: 0, birds: 0 };
@@ -258,6 +270,6 @@
 
   window.CARE = {
     MONTHS, LIGHT, monthList, waterStatus, waterInterval, isEstablishing, thirstyPlants, plantingWarnings, insights, thisMonth,
-    sunLabel, lifeLabel, gardenContext, scorePlant, rankPlants,
+    sunLabel, lifeLabel, BUY_LABEL, BUY_TEXT, gardenContext, scorePlant, rankPlants,
   };
 })();

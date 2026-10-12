@@ -324,6 +324,8 @@
     },
     addPlant(x, y, id) {
       state.plants[key(x, y)] = newRecord(id, todayStr(), todayStr());
+      // out-of-season plantings never count toward rewards (the one rule)
+      if (!window.PLANT_BY_ID[id].plantMonths.includes(new Date().getMonth() + 1)) state.plants[key(x, y)].offSeason = true;
       this.log('planted', id, key(x, y));
     },
     // a plant that already grows in the yard: full-grown, rain-fed, no history of planting
