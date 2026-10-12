@@ -39,13 +39,15 @@ INTERVIEW — find out, roughly:
 
 COORDINATE SYSTEM (important):
 - The map is a 40-wide × 26-tall grid. Each tile is 3 ft × 3 ft (120 ft × 78 ft
-  lot). If my lot is smaller, keep everything centered and leave extra lawn.
+  lot). If my lot is smaller or not a rectangle, paint the land that isn't mine
+  as "offlot" so the fence follows my real lot line.
 - x runs 0 (left) → 39 (right). y runs 0 (top = BACK of the lot) → 25 (bottom =
   STREET side). The front yard is therefore at HIGH y values.
 - Terrain rectangles are painted in the order given, over an all-grass base.
   rect = [x, y, width, height] in tiles.
 - Terrain types: "grass", "soil" (garden bed), "path" (walks/patios), "driveway",
-  "house".
+  "house", "street" (the road and sidewalk; usually the bottom 2 rows), and
+  "offlot" (neighbors' land outside my lot line).
 - Plants sit on single tiles at [x, y]; they may only be placed on grass or soil
   tiles (put beds under them first). Use "count_along" with "direction":
   "right" or "down" to plant a row. Trees are 1 tile but render a big canopy —

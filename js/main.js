@@ -15,7 +15,7 @@
 
   // ---------- preferences ----------
   const PREF_KEY = 'gardenstar-ui-v1';
-  let prefs = { welcomed: false, shade: false, tipsSeen: false, houseWall: 'brick', houseRoof: 'gray' };
+  let prefs = { welcomed: false, shade: false, tipsSeen: false };
   try { Object.assign(prefs, JSON.parse(localStorage.getItem(PREF_KEY) || '{}')); } catch (e) { /* private mode */ }
   function savePrefs() { try { localStorage.setItem(PREF_KEY, JSON.stringify(prefs)); } catch (e) { /* ignore */ } }
 
@@ -80,13 +80,13 @@
   function renderWorld() {
     for (let y = 0; y < Y.H; y++) for (let x = 0; x < Y.W; x++) S.drawTerrain(wctx, Y.terrainAt(x, y), x, y);
     S.drawHouses(wctx);
-    for (let x = 0; x < Y.W; x++) {
-      if (Y.terrainAt(x, 0) === 'grass') S.drawFence(wctx, x, 0, false);
-      if (Y.terrainAt(x, Y.H - 1) === 'grass') S.drawFence(wctx, x, Y.H - 1, false);
-    }
-    for (let y = 1; y < Y.H - 1; y++) {
-      if (Y.terrainAt(0, y) === 'grass') S.drawFence(wctx, 0, y, true);
-      if (Y.terrainAt(Y.W - 1, y) === 'grass') S.drawFence(wctx, Y.W - 1, y, true);
+    // fence along the lot line: lawn tiles next to a neighbor or the map edge
+    // (the street side stays open)
+    const outside = (x, y) => { const t = Y.terrainAt(x, y); return t == null || t === 'offlot'; };
+    for (let y = 0; y < Y.H; y++) for (let x = 0; x < Y.W; x++) {
+      if (Y.terrainAt(x, y) !== 'grass') continue;
+      if (outside(x, y - 1) || outside(x, y + 1)) S.drawFence(wctx, x, y, false);
+      else if (outside(x - 1, y) || outside(x + 1, y)) S.drawFence(wctx, x, y, true);
     }
     const plants = Y.allPlants().sort((a, b) => a.y - b.y);
     for (const p of plants) if (p.def.type !== 'tree') S.drawPlant(wctx, p.def, p.x, p.y, Y.growthStage(p.rec));
@@ -314,12 +314,13 @@
 
   // ---------- actions ----------
   const sunWords = { full: 'full sun', part: 'part shade', shade: 'shade' };
-  const terrainNames = { grass: 'Lawn', soil: 'Garden bed', path: 'Path or patio', driveway: 'Driveway', house: 'House' };
+  const terrainNames = { grass: 'Lawn', soil: 'Garden bed', path: 'Path or patio', driveway: 'Driveway', house: 'House', street: 'Street', offlot: 'Not your lot' };
 
   async function tryPlant(t) {
     const def = window.PLANT_BY_ID[ui.plantId];
     const rec = Y.plantAt(t.x, t.y);
     if (rec) { toast(`That spot has a ${esc(window.PLANT_BY_ID[rec.id].name)}. Dig it up first, or pick an empty tile.`); return; }
+    if (!Y.inLot(t.x, t.y)) { toast('That’s outside your lot. If it’s yours, paint it with Build first.'); return; }
     if (!Y.isPlantable(t.x, t.y)) { toast('Plants go on lawn or garden beds. Use Build to make a bed here.'); return; }
     if (ui.plantMode === 'existing') {
       snapshot();
@@ -367,7 +368,8 @@
     const terr = Y.terrainAt(t.x, t.y);
     const sun = Y.sunAt(t.x, t.y);
     const by = sun.by ? ` from your ${window.PLANT_BY_ID[sun.by.id].name}` : '';
-    const hint = Y.isPlantable(t.x, t.y) ? ' Tap Plant to add something here.' : '';
+    const hint = Y.isPlantable(t.x, t.y) ? ' Tap Plant to add something here.'
+      : terr === 'house' ? ' Garden > More > Your house to change it.' : '';
     toast(`<b>${terrainNames[terr]}</b> · ${sunWords[sun.level]}${esc(by)}.${hint}`);
   }
 
@@ -527,6 +529,7 @@
     const kind = b.dataset.open;
     if (ui.sheet && ui.sheet.kind === kind) closeSheet(); else openSheet(kind);
   });
+  $('pal-house').onclick = () => openSheet('house');
   document.querySelectorAll('#palette [data-terrain]').forEach(b => b.onclick = () => {
     ui.terrain = b.dataset.terrain;
     document.querySelectorAll('#palette [data-terrain]').forEach(x => x.classList.toggle('active', x === b));
@@ -537,9 +540,11 @@
   function openSheet(kind, args) {
     ui.sheet = { kind, args: args || {} };
     sheet.classList.add('open');
+    sheet.classList.toggle('short', kind === 'house'); // keep the house in view while building
     sheet.setAttribute('aria-hidden', 'false');
     document.getElementById('app').classList.add('sheet-open');
     renderSheet(true);
+    if (kind === 'house') focusHouse();
   }
   function closeSheet() {
     ui.sheet = null;
@@ -570,7 +575,7 @@
     const { kind, args } = ui.sheet;
     const r = {
       shop: renderShop, plant: renderPlantCard, info: renderPlantInfo,
-      quests: renderQuests, garden: renderGarden, weather: renderWeather,
+      quests: renderQuests, garden: renderGarden, weather: renderWeather, house: renderHouse,
     }[kind](args);
     if (!r) { closeSheet(); return; }
     $('sheet-title').textContent = r.title;
@@ -846,22 +851,123 @@
     };
   }
 
-  const WALL_NAMES = { brick: 'Brick', cream: 'Cream siding', white: 'White siding', barn_red: 'Red barn', barn_teal: 'Teal barn', barn_yellow: 'Yellow barn', barn_gray: 'Gray barn' };
-  const ROOF_NAMES = { gray: 'Gray shingle', red: 'Red', brown: 'Brown', metal: 'Metal' };
-  function houseStylePicker() {
-    const walls = window.ART.houseWalls(), roofs = window.ART.houseRoofs();
-    if (!walls.length) return '';
-    const st = window.ART.houseStyle();
-    const chips = (list, names, cur, attr) => `<div class="chips" style="margin-top:6px">${list.map(v => `<button data-${attr}="${v}" class="${cur === v ? 'active' : ''}">${names[v] || cap(v)}</button>`).join('')}</div>`;
-    return `<div class="card"><h3>Your house</h3><p class="small">Pick the closest match to your real house.</p>
-      <div class="section-title" style="margin-top:8px">Walls</div>${chips(walls, WALL_NAMES, st.wall, 'hwall')}
-      <div class="section-title" style="margin-top:8px">Roof</div>${chips(roofs, ROOF_NAMES, st.roof, 'hroof')}</div>`;
+  // house builder ------------------------------------------------------
+  const WALLS = [
+    ['Brick', { brick: 'Red brick', brick_tan: 'Tan brick', brick_gray: 'Gray brick', brick_white: 'Painted brick' }],
+    ['Siding', { cream: 'Cream', white: 'White', gray: 'Gray', blue: 'Blue', sage: 'Sage', yellow: 'Yellow', navy: 'Navy' }],
+    ['Barn', { barn_red: 'Red', barn_teal: 'Teal', barn_yellow: 'Yellow', barn_gray: 'Gray' }],
+  ];
+  const ROOFS = { gray: 'Gray shingle', black: 'Black', brown: 'Brown', red: 'Red', green: 'Green', blue: 'Blue', metal: 'Metal' };
+  const DOORS = { wood: ['Wood', '#b7773e'], red: ['Red', '#b23a30'], blue: ['Blue', '#2f5d8c'], green: ['Green', '#3f6e48'], black: ['Black', '#33333b'], white: ['White', '#ecebe6'], yellow: ['Yellow', '#e3b947'] };
+  const BOXES = { red: ['Red', '#d9442f'], pink: ['Pink', '#e58fb0'], purple: ['Purple', '#7a5cc8'], yellow: ['Yellow', '#ecd060'], white: ['White', '#f2f0e6'] };
+
+  // average color of an atlas frame (left strip for walls, so the window doesn't count)
+  const colorCache = {};
+  function frameColor(key, strip) {
+    if (colorCache[key]) return colorCache[key];
+    const img = window.ART.get(key);
+    if (!img || !img.getContext) return '#999'; // not loaded yet: don't cache
+    const w = strip ? Math.min(5, img.width) : img.width, y0 = strip ? 5 : 0, h = img.height - y0 * 2;
+    const d = img.getContext('2d').getImageData(0, y0, w, h).data;
+    let r = 0, g = 0, b = 0, n = 0;
+    for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 128) { r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; }
+    return (colorCache[key] = n ? `rgb(${Math.round(r / n)},${Math.round(g / n)},${Math.round(b / n)})` : '#999');
+  }
+
+  // footprint thumbnail: the preset's rects (garage dashed) as a tiny SVG
+  function shapeIcon(shape) {
+    const fp = Y.footprint({ shape, garage: 'none' });
+    const [bx, by, bw, bh] = fp.box;
+    const rects = fp.rects.map(([x, y, w, h]) => `<rect x="${x - bx}" y="${y - by}" width="${w}" height="${h}"/>`).join('');
+    return `<svg class="shape-ico" viewBox="-1 -1 ${bw + 2} ${bh + 2}" aria-hidden="true">${rects}</svg>`;
+  }
+
+  function chipRow(field, options, cur, swatch) {
+    return `<div class="chips wrap">${Object.entries(options).map(([v, label]) =>
+      `<button data-home="${field}" data-v="${v}" class="${cur === v ? 'active' : ''}">${swatch ? `<span class="dot" style="background:${swatch(v)}"></span>` : ''}${label}</button>`).join('')}</div>`;
+  }
+
+  function renderHouse() {
+    const h = Y.state.home, plan = h.plan, opts = window.ART.houseOptions();
+    const has = list => v => !list.length || list.includes(v);
+    const barn = /^barn_/.test(h.wall);
+    const seg = (field, pairs, cur) => `<div class="seg">${pairs.map(([v, l]) => `<button data-home="${field}" data-v="${v}" class="${String(cur) === String(v) ? 'active' : ''}">${l}</button>`).join('')}</div>`;
+    const shapes = Object.entries(Y.HOUSE_SHAPES).map(([id, sh]) =>
+      `<button class="shape${plan && plan.shape === id ? ' active' : ''}" data-shape="${id}">${shapeIcon(id)}<span>${sh.name}</span></button>`).join('');
+    const walls = WALLS.map(([group, names]) => {
+      const avail = Object.fromEntries(Object.entries(names).filter(([v]) => has(opts.walls)(v)));
+      return Object.keys(avail).length ? `<div class="small muted" style="margin-top:6px">${group}</div>${chipRow('wall', avail, h.wall, v => frameColor('house/wall/' + v, true))}` : '';
+    }).join('');
+    const roofs = Object.fromEntries(Object.entries(ROOFS).filter(([v]) => has(opts.roofs)(v)));
+    const doors = Object.fromEntries(Object.entries(DOORS).map(([v, [l]]) => [v, l]));
+    const boxes = Object.assign({ '': 'None' }, Object.fromEntries(Object.entries(BOXES).map(([v, [l]]) => [v, l])));
+    return {
+      title: 'Your house',
+      html: `<div class="card"><h3>Shape</h3>
+          <p class="small">${plan ? 'Tap a shape to swap it. Your beds and plants stay put unless the house moves onto them.' : 'Pick a shape to replace the house you painted.'}</p>
+          <div class="shapes">${shapes}</div>
+          ${plan ? `<div class="section-title" style="margin-top:10px">Garage</div>${seg('garage', [['none', 'None'], ['left', 'Left'], ['right', 'Right']], plan.garage || 'none')}
+          <div class="section-title" style="margin-top:10px">Move</div>
+          <div class="nudge"><button data-move="-1,0" aria-label="Move left">&larr;</button><button data-move="0,-1" aria-label="Move back">&uarr;</button><button data-move="0,1" aria-label="Move toward the street">&darr;</button><button data-move="1,0" aria-label="Move right">&rarr;</button></div>` : ''}
+          <div class="section-title" style="margin-top:10px">Stories</div>${seg('stories', [[1, 'One'], [2, 'Two']], h.stories)}</div>
+        <div class="card"><h3>Walls</h3>${walls}</div>
+        <div class="card"><h3>Roof</h3>${chipRow('roof', roofs, h.roof, v => frameColor('house/roof/' + v))}</div>
+        ${barn ? '' : `<div class="card"><h3>Front door</h3>${chipRow('door', doors, h.door, v => DOORS[v][1])}</div>`}
+        <div class="card"><h3>Extras</h3>
+          ${barn ? '' : `<div class="small muted">Window boxes</div>${chipRow('boxes', boxes, h.boxes, v => v ? BOXES[v][1] : 'transparent')}`}
+          <div class="chips wrap" style="margin-top:8px">
+            <button data-toggle="chimney" class="${h.chimney ? 'active' : ''}">Chimney</button>
+            <button data-toggle="pots" class="${h.pots ? 'active' : ''}">Planters by the door</button></div></div>
+        <button class="btn block" id="house-done">Done</button>`,
+      bind(body) {
+        const change = fn => { snapshot(); fn(); persist(); };
+        body.querySelectorAll('[data-shape]').forEach(b => b.onclick = () => change(() => {
+          const p = h.plan;
+          const next = p ? Y.clampPlan({ shape: b.dataset.shape, garage: p.garage, x: p.x, y: p.y }) : Y.defaultPlan(b.dataset.shape, 'right');
+          Y.stampHome(next);
+          focusHouse();
+        }));
+        body.querySelectorAll('[data-home]').forEach(b => b.onclick = () => change(() => {
+          const f = b.dataset.home, v = b.dataset.v;
+          if (f === 'garage') { const p = h.plan; Y.stampHome(Y.clampPlan({ shape: p.shape, garage: v, x: p.x, y: p.y })); }
+          else h[f] = f === 'stories' ? Number(v) : v;
+        }));
+        body.querySelectorAll('[data-toggle]').forEach(b => b.onclick = () => change(() => { h[b.dataset.toggle] = !h[b.dataset.toggle]; }));
+        body.querySelectorAll('[data-move]').forEach(b => b.onclick = () => change(() => {
+          const [dx, dy] = b.dataset.move.split(',').map(Number), p = h.plan;
+          Y.stampHome(Y.clampPlan({ shape: p.shape, garage: p.garage, x: p.x + dx, y: p.y + dy }));
+        }));
+        $('house-done').onclick = () => {
+          closeSheet();
+          if (ui.tool === 'build' || ui.afterHouse) {
+            setTool('build');
+            toast('Now paint beds, paths and patios with Build.');
+          }
+          if (ui.afterHouse) { ui.afterHouse = false; if (!prefs.tipsSeen) showTips(); }
+        };
+      },
+    };
+  }
+
+  // center the house in the part of the map the open sheet doesn't cover
+  function focusHouse() {
+    const t = Y.houseTiles();
+    if (!t.length) return;
+    const xs = t.map(a => a[0]), ys = t.map(a => a[1]);
+    const cx = (Math.min(...xs) + Math.max(...xs)) / 2, cy = (Math.min(...ys) + Math.max(...ys)) / 2 + 1;
+    const v = view(), wide = window.innerWidth >= 900;
+    const covX = wide ? sheet.offsetWidth : 0, covY = wide ? 0 : Math.max(0, sheet.offsetHeight - (window.innerHeight - canvas.getBoundingClientRect().bottom));
+    const s = clampS(Math.min((v.w - covX) / ((Math.max(...xs) - Math.min(...xs) + 6) * T), (v.h - covY) / ((Math.max(...ys) - Math.min(...ys) + 6) * T)));
+    cam.s = s;
+    cam.x = (v.w - covX) / 2 - (cx + 0.5) * T * s;
+    cam.y = (v.h - covY) / 2 - (cy + 0.5) * T * s;
+    requestDraw();
   }
 
   function gardenMore() {
     const credit = window.ART.creditLine();
     return {
-      html: `${houseStylePicker()}
+      html: `<div class="card"><h3>Your house</h3><p class="small">Shape, garage, stories, colors, door, and extras like flower boxes and a chimney.</p><div class="row" style="margin-top:8px"><button class="btn" id="m-house">Customize your house</button></div></div>
         <div class="card"><h3>Share</h3><p class="small">Save a picture of your pixel yard.</p><div class="row" style="margin-top:8px"><button class="btn" id="m-share">Save yard picture</button></div></div>
         <div class="card"><h3>Describe your yard to Claude</h3><p class="small">Chat about your real yard and Claude builds the map for you.</p><div class="row" style="margin-top:8px"><button class="btn alt" id="m-interview">Start interview</button></div></div>
         <div class="card"><h3>Backup</h3><p class="small">Copy your garden to keep it safe or move it to another device.</p>
@@ -870,13 +976,7 @@
         ${MON.supportUrl ? `<a class="btn gold block" target="_blank" rel="noopener" href="${esc(MON.supportUrl)}">Support GardenStar</a>` : ''}
         <p class="small muted">GardenStar test flight. Prototype garden: ${esc(window.SITE.address)} (USDA zone ${window.SITE.usdaZone}). Plant data: Gulf Coast natives and the Harris County planting calendar. Weather: Open-Meteo.${credit ? ' ' + esc(credit) + '.' : ''} Not affiliated with FarmVille or Zynga.</p>`,
       bind(body) {
-        body.querySelectorAll('[data-hwall], [data-hroof]').forEach(b => b.onclick = () => {
-          if (b.dataset.hwall) prefs.houseWall = b.dataset.hwall;
-          if (b.dataset.hroof) prefs.houseRoof = b.dataset.hroof;
-          savePrefs();
-          window.ART.setHouseStyle(prefs.houseWall, prefs.houseRoof);
-          requestDraw(true); renderSheet(false);
-        });
+        $('m-house').onclick = () => openSheet('house');
         $('m-share').onclick = shareYard;
         $('m-interview').onclick = () => { closeSheet(); showWelcome('interview'); };
         $('m-export').onclick = exportGarden;
@@ -978,21 +1078,54 @@
       };
       return;
     }
+    if (step === 'lot') {
+      const cards = Object.entries(Y.LOTS).map(([id, lot]) =>
+        `<button class="choice lot" data-lot="${id}">${lotIcon(id)}<span><b>${lot.name}</b><span>${lot.desc}</span></span></button>`).join('');
+      el.innerHTML = `<div class="welcome-box">${logo}
+        <h3 style="font-family:var(--pixel);font-size:19px">Pick your lot shape</h3>
+        <p class="small muted">Street at the bottom. You can trim the edges later with Build &gt; Not mine.</p>
+        <div class="lots">${cards}</div>
+        <button class="btn alt block" id="w-back">Back</button></div>`;
+      I.apply(el);
+      el.querySelectorAll('[data-lot]').forEach(b => b.onclick = () => startGame('blank', null, b.dataset.lot));
+      $('w-back').onclick = () => showWelcome('home');
+      return;
+    }
     if (step === 'close') { el.classList.add('hidden'); return; }
     el.innerHTML = `<div class="welcome-box">${logo}
       <button class="choice primary" id="w-demo">${I.html('garden')}<span><b>Start with my demo yard</b><span>The Cliffwood Dr. house in Houston, with a pecan, a live oak and a few natives already growing</span></span></button>
-      <button class="choice" id="w-blank">${I.html('build')}<span><b>Start from a blank lot</b><span>Paint your own house, beds and paths</span></span></button>
+      <button class="choice" id="w-blank">${I.html('build')}<span><b>Build my own yard</b><span>Pick your lot shape, build your house from preset pieces, then paint beds and paths</span></span></button>
       <button class="choice" id="w-chat">${I.html('scroll')}<span><b>Describe my yard to Claude</b><span>Answer a few questions in chat and Claude draws the map</span></span></button>
       <p class="small muted" style="text-align:center">Houston and the Gulf Coast only for now · zone ${window.SITE.usdaZone}</p></div>`;
     I.apply(el);
     $('w-demo').onclick = () => startGame('demo');
-    $('w-blank').onclick = () => startGame('blank');
+    $('w-blank').onclick = () => showWelcome('lot');
     $('w-chat').onclick = () => showWelcome('interview');
   }
 
-  function startGame(mode, message) {
+  // mini map of a lot preset: lawn, neighbors, street
+  function lotIcon(id) {
+    const fill = { grass: '#6fae45', offlot: '#3b4a3c', street: '#6b6b74' };
+    let rects = '';
+    for (let y = 0; y < Y.H; y++) {
+      let x0 = 0;
+      for (let x = 1; x <= Y.W; x++) {
+        const t = Y.lotTerrain(id, x0, y);
+        if (x < Y.W && Y.lotTerrain(id, x, y) === t) continue;
+        rects += `<rect x="${x0}" y="${y}" width="${x - x0}" height="1" fill="${fill[t]}"/>`;
+        x0 = x;
+      }
+    }
+    return `<svg class="lot-ico" viewBox="0 0 ${Y.W} ${Y.H}" aria-hidden="true">${rects}</svg>`;
+  }
+
+  function startGame(mode, message, lot) {
     if (mode === 'demo') Y.buildDefaultLayout();
-    if (mode === 'blank') Y.emptyLot();
+    if (mode === 'blank') {
+      Y.emptyLot();
+      Y.applyLot(lot || 'standard');
+      Y.stampHome(Y.defaultPlan('ranch', 'right'));
+    }
     // a fresh yard (or a first run) starts a fresh game; re-importing your
     // yard from the More tab keeps your XP and badges
     if (mode || !prefs.welcomed) G.reset();
@@ -1001,13 +1134,14 @@
     $('welcome').classList.add('hidden');
     closeSheet();
     ui.plantId = null; ui.selected = null;
-    setTool(mode === 'blank' ? 'build' : 'look');
+    setTool('look');
     G.checkBadges(null, true);
     G.checkIn();
     persist();
     initialCamera();
     if (message) toast(esc(message));
-    if (!prefs.tipsSeen) showTips();
+    if (mode === 'blank') { ui.afterHouse = true; openSheet('house'); } // tips wait until the house is done
+    else if (!prefs.tipsSeen) showTips();
   }
 
   function showTips() {
@@ -1051,7 +1185,6 @@
   refreshHUD();
 
   window.ART.init(() => {
-    window.ART.setHouseStyle(prefs.houseWall, prefs.houseRoof);
     Object.keys(swatchCache).forEach(k => delete swatchCache[k]);
     requestDraw(true); refreshSheet(); renderModeChip();
   });

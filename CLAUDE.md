@@ -40,9 +40,16 @@ action also takes back its XP.
   `tools/slice_limezu.py`; commit only the atlas, never the pack's sheets.
   Natives without pack art are pack plants tinted to their real bloom color.
   The house is assembled per column from a roof tile and a repeating wall unit
-  (window, trim, foundation), with corner posts and a door where a path meets
-  it. Walls (brick, cream/white siding from Modern Exteriors, four barn colors)
-  and roofs (gray shingle, red, brown, metal) are picked in Garden > More.
+  (window, trim, foundation), one unit per story, with corner posts, a front
+  door where a path meets it and a garage door across a driveway. Driveway and
+  street are procedural concrete/asphalt.
+- House and lot live in the garden save: `YARD.state.home` holds the style
+  (wall, roof, door, stories, chimney, boxes, pots) and the builder `plan`
+  (preset shape, garage side, position, tiles it set). `stampHome` puts back
+  the previous stamp's tiles before stamping again. Lot presets mark
+  `street` and `offlot` tiles; neither is plantable and the fence follows
+  the `offlot` line. The builder is the "Your house" sheet (Build > My house,
+  Garden > More, and step two of "Build my own yard").
   The free Sprout Lands pack is non-commercial: don't commit its assets.
 - Plant shop has "New planting" (warnings + XP) and "Already in my yard"
   (`YARD.addExisting`: full-grown, no warnings, no XP) plus a Trees filter.

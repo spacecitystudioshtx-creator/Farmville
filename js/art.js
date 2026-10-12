@@ -45,7 +45,7 @@ window.ART = (function () {
     });
   }
   let autotiles = new Set();
-  let houseWalls = [], houseRoofs = [], houseWall = 'brick', houseRoof = 'gray';
+  let house = { walls: [], roofs: [], doors: [], boxes: [], windows: {} };
   let variants = {};
 
   function bloomBucket(hex) {
@@ -100,8 +100,10 @@ window.ART = (function () {
           if (m.atlas) jobs.push(loadAtlas('assets/art/' + m.atlas, m.frames || {}));
           autotiles = new Set(m.autotiles || []);
           variants = m.tileVariants || {};
-          houseWalls = m.houseWalls || [];
-          houseRoofs = m.houseRoofs || [];
+          house = {
+            walls: m.houseWalls || [], roofs: m.houseRoofs || [], doors: m.houseDoors || [],
+            boxes: m.houseBoxes || [], windows: m.houseWindows || {},
+          };
           for (const t of m.tiles || []) jobs.push(load('tiles/' + t, `assets/art/tiles/${t}.png`));
           for (const [id, stages] of Object.entries(m.plants || {}))
             for (const s of stages) jobs.push(load(`plants/${id}/${s}`, `assets/art/plants/${id}_s${s}.png`));
@@ -126,13 +128,10 @@ window.ART = (function () {
     // 48x48 (3x3 pieces) ground island for edge-aware terrain, or null
     autotile(type) { return autotiles.has(type) ? cache['auto/' + type] || null : null; },
     creditLine() { return credit; },
-    houseWalls() { return houseWalls; },
-    houseRoofs() { return houseRoofs; },
-    houseStyle() { return { wall: houseWall, roof: houseRoof }; },
-    setHouseStyle(wall, roof) {
-      if (houseWalls.includes(wall)) houseWall = wall;
-      if (houseRoofs.includes(roof)) houseRoof = roof;
-    },
+    // house options the atlas has art for: { walls, roofs, doors, boxes }
+    houseOptions() { return house; },
+    // [window center x, sill y] inside a wall unit, for flower boxes
+    houseWindow(wall) { return house.windows[wall] || null; },
     plantScale() { return plantScale; },
     // exact species art, then facsimiles, at the nearest available stage
     plant(id, stage) {

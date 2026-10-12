@@ -7,7 +7,24 @@
     plants: {},    // "x,y" -> { id, planted, lastWatered, notes:[], harvests:[] }
     journal: [],   // newest last: { date, type, plantId, key, text }
     lost: [],      // plants marked as died: { id, planted, died, cause }
+    home: null,    // house style + builder plan, see HOME_DEFAULT
   };
+
+  // House look (drawn by SPRITES.drawHouses) and the builder's plan: which
+  // preset shape sits where, and the tiles it set (so moving it can put the
+  // lawn back). A painted house has plan null.
+  const HOME_DEFAULT = { wall: 'brick', roof: 'gray', door: 'wood', stories: 1, chimney: false, boxes: '', pots: false, plan: null };
+  function normalizeHome(h) {
+    if (!h) { // saves from before houses lived in the garden: take the old UI prefs
+      h = {};
+      try {
+        const p = JSON.parse(localStorage.getItem('gardenstar-ui-v1') || '{}');
+        if (p.houseWall) h.wall = p.houseWall;
+        if (p.houseRoof) h.roof = p.houseRoof;
+      } catch (e) { /* private mode */ }
+    }
+    return Object.assign({}, HOME_DEFAULT, h);
+  }
 
   function key(x, y) { return x + ',' + y; }
 
@@ -30,6 +47,139 @@
     state.plants = {};
     state.journal = [];
     state.lost = [];
+    state.home = normalizeHome({});
+  }
+
+  // ---------- lot shapes ----------
+  // A preset marks what isn't yours: 'street' (road + sidewalk out front) and
+  // 'offlot' (the neighbors). Everything else starts as lawn.
+  const STREET = 2;           // rows of street along the bottom
+  const FRONT = H - STREET;   // first street row
+  const LOTS = {
+    standard: { name: 'Standard', desc: 'A rectangle with the street out front', inLot: () => true },
+    corner: { name: 'Corner lot', desc: 'Streets along the front and one side', side: true, inLot: () => true },
+    culdesac: {
+      name: 'Cul-de-sac', desc: 'Pie-shaped: narrow at the street, wide in back',
+      inLot: (x, y) => Math.abs(x + 0.5 - W / 2) <= (W / 2) * (1 - 0.5 * y / (FRONT - 1)),
+    },
+    narrow: { name: 'Narrow and deep', desc: 'A city lot, half as wide', inLot: x => x >= 10 && x < 30 },
+    wide: { name: 'Wide and shallow', desc: 'Lots of frontage, a small back yard', inLot: (x, y) => y >= 9 },
+    angled: { name: 'Angled back', desc: 'The back fence runs on a slant', inLot: (x, y) => y >= Math.round(10 * (1 - x / (W - 1))) },
+  };
+  function lotTerrain(id, x, y) {
+    const lot = LOTS[id] || LOTS.standard;
+    if (y >= FRONT || (lot.side && x >= W - STREET)) return 'street';
+    return lot.inLot(x, y) ? 'grass' : 'offlot';
+  }
+  function applyLot(id) {
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) state.terrain[y][x] = lotTerrain(id, x, y);
+    state.plants = {};
+  }
+
+  // ---------- house builder ----------
+  // Preset footprints, front wall at the bottom. rects are [x, y, w, h] from
+  // the plan origin; door is the column the front walk leaves from.
+  const HOUSE_SHAPES = {
+    cottage: { name: 'Cottage', rects: [[0, 0, 10, 5]], door: 4 },
+    ranch: { name: 'Ranch', rects: [[0, 0, 16, 7]], door: 7 },
+    lshape: { name: 'L-shape', rects: [[0, 0, 16, 5], [0, 5, 6, 3]], door: 9 },
+    courtyard: { name: 'Courtyard', rects: [[0, 0, 18, 5], [0, 5, 5, 3], [13, 5, 5, 3]], door: 8 },
+    split: { name: 'Split', rects: [[0, 0, 9, 7], [9, 1, 8, 5]], door: 4 },
+  };
+  const GARAGE_W = 6, GARAGE_D = 5;
+
+  // garage rect beside the shape, its front flush with that side's front wall
+  function footprint(plan) {
+    const sh = HOUSE_SHAPES[plan.shape] || HOUSE_SHAPES.ranch;
+    const rects = sh.rects.slice();
+    const right = Math.max(...rects.map(r => r[0] + r[2]));
+    let garage = null;
+    if (plan.garage === 'left' || plan.garage === 'right') {
+      const edge = plan.garage === 'left' ? rects.filter(r => r[0] === 0) : rects.filter(r => r[0] + r[2] === right);
+      const front = Math.max(...edge.map(r => r[1] + r[3]));
+      garage = [plan.garage === 'left' ? -GARAGE_W : right, front - GARAGE_D, GARAGE_W, GARAGE_D];
+      rects.push(garage);
+    }
+    const x0 = Math.min(...rects.map(r => r[0])), y0 = Math.min(...rects.map(r => r[1]));
+    const x1 = Math.max(...rects.map(r => r[0] + r[2])), y1 = Math.max(...rects.map(r => r[1] + r[3]));
+    return { sh, rects, garage, box: [x0, y0, x1 - x0, y1 - y0] };
+  }
+
+  // house, driveway (from the garage to the street) and front walk tiles
+  function planTiles(plan) {
+    const fp = footprint(plan);
+    const house = new Set(), out = [];
+    const inMap = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
+    for (const [rx, ry, rw, rh] of fp.rects)
+      for (let y = ry; y < ry + rh; y++) for (let x = rx; x < rx + rw; x++) {
+        const k = key(plan.x + x, plan.y + y);
+        if (!house.has(k) && inMap(plan.x + x, plan.y + y)) { house.add(k); out.push([plan.x + x, plan.y + y, 'house']); }
+      }
+    const toStreet = (x, y, type, stopAt) => {
+      for (; inMap(x, y) && state.terrain[y][x] !== 'street' && !house.has(key(x, y)); y++) {
+        if (stopAt && stopAt.has(key(x, y))) break;
+        out.push([x, y, type]);
+      }
+    };
+    const drive = new Set();
+    if (fp.garage) {
+      const [gx, gy, , gh] = fp.garage;
+      for (let i = 1; i <= 4; i++) {
+        const x = plan.x + gx + i, y = plan.y + gy + gh;
+        const before = out.length;
+        toStreet(x, y, 'driveway');
+        for (let j = before; j < out.length; j++) drive.add(key(out[j][0], out[j][1]));
+      }
+    }
+    const dx = plan.x + fp.sh.door;
+    let dy = plan.y;
+    while (house.has(key(dx, dy))) dy++;
+    toStreet(dx, dy, 'path', drive);
+    return out;
+  }
+
+  function stampHome(plan) {
+    const home = state.home;
+    const prev = home.plan;
+    if (prev && prev.tiles) { // put back what the last stamp covered, unless repainted since
+      for (const [k, [was, set]] of Object.entries(prev.tiles)) {
+        const [x, y] = k.split(',').map(Number);
+        if (state.terrain[y] && state.terrain[y][x] === set) state.terrain[y][x] = was;
+      }
+    } else { // first build replaces a painted house
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (state.terrain[y][x] === 'house') state.terrain[y][x] = 'grass';
+    }
+    const tiles = {};
+    for (const [x, y, type] of planTiles(plan)) {
+      const k = key(x, y);
+      if (!tiles[k]) tiles[k] = [state.terrain[y][x], type];
+      else tiles[k][1] = type;
+      state.terrain[y][x] = type;
+      delete state.plants[k];
+    }
+    home.plan = { shape: plan.shape, garage: plan.garage, x: plan.x, y: plan.y, tiles };
+  }
+
+  // centered on the lot, front wall ~7 tiles (21 ft) back from the street
+  function defaultPlan(shape, garage) {
+    const fp = footprint({ shape, garage });
+    const [bx, by, bw, bh] = fp.box;
+    let street = H;
+    const cx = Math.floor(W / 2);
+    for (let y = 0; y < H; y++) if (state.terrain[y][cx] === 'street') { street = y; break; }
+    const front = Math.max(bh, street - 8);
+    const row = Math.max(0, front - 1);
+    let l = 0, r = W - 1;
+    while (l < W - 1 && state.terrain[row][l] !== 'grass') l++;
+    while (r > 0 && state.terrain[row][r] !== 'grass') r--;
+    const x = Math.round((l + r + 1) / 2 - bw / 2) - bx;
+    return clampPlan({ shape, garage, x, y: front - bh - by });
+  }
+  function clampPlan(plan) {
+    const [bx, by, bw, bh] = footprint(plan).box;
+    plan.x = Math.max(1 - bx, Math.min(W - 1 - bw - bx, plan.x));
+    plan.y = Math.max(1 - by, Math.min(H - 3 - bh - by, plan.y));
+    return plan;
   }
 
   // Starter layout approximating a Willow Meadows ranch lot:
@@ -37,13 +187,11 @@
   // front foundation beds, back patio, veggie beds in the back corner.
   function buildDefaultLayout() {
     emptyLot();
+    applyLot('standard');
     const fill = (type, x0, y0, x1, y1) => {
       for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) state.terrain[y][x] = type;
     };
-    fill('house', 7, 9, 22, 15);
-    fill('house', 22, 11, 27, 15);
-    fill('driveway', 23, 16, 26, 25);
-    fill('path', 14, 16, 14, 25);
+    stampHome({ shape: 'ranch', garage: 'right', x: 7, y: 9 });
     fill('soil', 8, 16, 13, 16);
     fill('soil', 15, 16, 22, 16);
     fill('path', 16, 7, 22, 8);
@@ -73,7 +221,7 @@
   }
 
   function serialize() {
-    return JSON.stringify({ v: 2, terrain: state.terrain, plants: state.plants, journal: state.journal, lost: state.lost });
+    return JSON.stringify({ v: 2, terrain: state.terrain, plants: state.plants, journal: state.journal, lost: state.lost, home: state.home });
   }
 
   function restore(data) {
@@ -85,6 +233,7 @@
     }
     state.journal = data.journal || [];
     state.lost = data.lost || [];
+    state.home = normalizeHome(data.home);
   }
 
   function save() {
@@ -150,6 +299,7 @@
 
   window.YARD = {
     W, H, state, key, todayStr, daysSince, growthStage, STAGE_NAMES,
+    LOTS, HOUSE_SHAPES, applyLot, lotTerrain, footprint, stampHome, defaultPlan, clampPlan,
     buildDefaultLayout, emptyLot, save, load, serialize, restore, sunAt, canopyRadius,
     checkpoint,
     canUndo() { return undoStack.length > 0; },
@@ -164,6 +314,7 @@
     terrainAt(x, y) { return state.terrain[y] && state.terrain[y][x]; },
     plantAt(x, y) { return state.plants[key(x, y)]; },
     isPlantable(x, y) { return !!plantableTerrain[this.terrainAt(x, y)]; },
+    inLot(x, y) { const t = this.terrainAt(x, y); return t != null && t !== 'offlot' && t !== 'street'; },
     canPlantAt(x, y) { return this.isPlantable(x, y) && !this.plantAt(x, y); },
     setTerrain(x, y, type) {
       if (state.terrain[y][x] === type) return false;

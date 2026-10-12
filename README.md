@@ -116,7 +116,8 @@ double down on the one that does. Time the big pushes to the two gardening surge
 - **Garden report**: native share, wildlife plants, months in bloom, and natives
   that would fill bloom gaps. Journal of everything you've done.
 - **Live weather** (Open-Meteo) with Houston monthly averages as a fallback.
-- **Welcome flow**: demo yard, blank lot, or describe your yard to Claude.
+- **Welcome flow**: demo yard, build your own (pick a lot shape, then a preset house you can
+  restyle), or describe your yard to Claude.
 - **Undo**, backup/restore, share a picture of your yard, installable PWA.
 
 ## Test

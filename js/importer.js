@@ -7,7 +7,7 @@
 (function () {
   const Y = () => window.YARD;
 
-  const TERRAIN_TYPES = { grass: 1, soil: 1, path: 1, driveway: 1, house: 1 };
+  const TERRAIN_TYPES = { grass: 1, soil: 1, path: 1, driveway: 1, house: 1, street: 1, offlot: 1 };
 
   function matchPlant(name) {
     const q = String(name).toLowerCase().trim();

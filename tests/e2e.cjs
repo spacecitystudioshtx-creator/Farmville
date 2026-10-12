@@ -229,6 +229,76 @@ async function run(browser, label, contextOpts, mobile) {
   await ctx.close();
 }
 
+// Build my own yard: lot shape, preset house, styles, moving it, undo
+async function runBuilder(browser, label, contextOpts, mobile) {
+  console.log(`\n== ${label}: build my own yard ==`);
+  const ctx = await browser.newContext(contextOpts);
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', e => errors.push(e.message));
+  page.on('console', m => {
+    if (m.type() === 'error' && !/ERR_|Failed to load resource|fonts\.g/.test(m.text())) errors.push(m.text());
+  });
+  await page.goto(`http://localhost:${server.address().port}/index.html`, { waitUntil: 'load' });
+  await page.waitForTimeout(800);
+  await page.click('#w-blank');
+  await page.waitForTimeout(200);
+  check('lot shapes offered', (await page.$$('[data-lot]')).length >= 5);
+  await shot(page, label + '-b1-lots');
+  await page.click('[data-lot="culdesac"]');
+  await page.waitForTimeout(500);
+  const lot = await page.evaluate(() => {
+    const t = window.YARD.state.terrain, flat = t.flat();
+    return { street: t[window.YARD.H - 1].every(v => v === 'street'), offlot: flat.filter(v => v === 'offlot').length,
+      house: flat.filter(v => v === 'house').length, drive: flat.filter(v => v === 'driveway').length, path: flat.filter(v => v === 'path').length };
+  });
+  check('cul-de-sac lot has a street and neighbors', lot.street && lot.offlot > 50, lot);
+  check('a starter house, driveway and front walk are built', lot.house > 50 && lot.drive > 0 && lot.path > 0, lot);
+  check('house builder opens', (await page.textContent('#sheet-title')) === 'Your house');
+  await shot(page, label + '-b2-house');
+
+  await page.click('[data-shape="lshape"]');
+  await page.click('[data-home="garage"][data-v="left"]');
+  await page.click('[data-home="stories"][data-v="2"]');
+  await page.click('[data-home="wall"][data-v="sage"]');
+  await page.click('[data-home="boxes"][data-v="red"]');
+  await page.click('[data-toggle="chimney"]');
+  const x0 = await page.evaluate(() => window.YARD.state.home.plan.x);
+  await page.click('[data-move="1,0"]');
+  await page.waitForTimeout(200);
+  const home = await page.evaluate(() => window.YARD.state.home);
+  check('shape, garage and style applied', home.plan.shape === 'lshape' && home.plan.garage === 'left' && home.stories === 2
+    && home.wall === 'sage' && home.boxes === 'red' && home.chimney, home);
+  check('arrows move the house', home.plan.x === x0 + 1, { x0, x: home.plan.x });
+  check('moving leaves no stray house tiles', await page.evaluate(() => {
+    const p = window.YARD.state.home.plan;
+    return window.YARD.houseTiles().every(([x, y]) => p.tiles[x + ',' + y] && p.tiles[x + ',' + y][1] === 'house');
+  }));
+  await page.click('#undo');
+  await page.waitForTimeout(150);
+  check('undo moves it back', (await page.evaluate(() => window.YARD.state.home.plan.x)) === x0);
+  await shot(page, label + '-b3-styled');
+  await page.click('#house-done');
+  await page.waitForTimeout(300);
+  if (await page.isVisible('#dialog')) await page.click('#dialog-box .btn');
+  check('done switches to Build', await page.evaluate(() => window.__GS.ui.tool === 'build'));
+
+  // the neighbors' land can't be planted
+  const off = await page.evaluate(() => {
+    for (let y = 0; y < window.YARD.H; y++) for (let x = 0; x < window.YARD.W; x++) if (window.YARD.terrainAt(x, y) === 'offlot') return { x, y };
+  });
+  await page.evaluate(() => document.querySelector('.toolbar [data-tool="look"]').click());
+  await pickPlant(page, 'gcmuhly');
+  await tap(page, mobile, await tilePoint(page, off.x, off.y));
+  check('planting outside the lot is refused', (await plantAt(page, off.x, off.y)) === null);
+
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForTimeout(800);
+  check('house style survives a reload', await page.evaluate(() => window.YARD.state.home.wall === 'sage' && window.YARD.state.home.plan.shape === 'lshape'));
+  check('no JavaScript errors', errors.length === 0, errors);
+  await ctx.close();
+}
+
 let server;
 (async () => {
   server = await serve();
@@ -237,6 +307,8 @@ let server;
   try {
     await run(browser, 'phone', { ...devices['iPhone 13'] }, true);
     await run(browser, 'desktop', { viewport: { width: 1440, height: 900 } }, false);
+    await runBuilder(browser, 'phone', { ...devices['iPhone 13'] }, true);
+    await runBuilder(browser, 'desktop', { viewport: { width: 1440, height: 900 } }, false);
   } catch (e) {
     console.log('FAIL  crashed: ' + (e.stack || e));
     failures++;

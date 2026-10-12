@@ -7,8 +7,8 @@ Usage:
 DIR must hold (rename the pack files to these):
   barn_red.png, barn_teal.png, barn_yellow.png, barn_gray.png
                - the big barn in each color (256x256, or a 3x export: 768x768)
-  me_13.png, me_14.png, me_150.png, me_155.png
-               - Modern Exteriors sheets (Tileset_13/14/150/155; the RPG Maker MV
+  me_13.png, me_14.png, me_147.png, me_150.png, me_155.png
+               - Modern Exteriors sheets (Tileset_13/14/147/150/155; the RPG Maker MV
                  edition's 768px sheets are fine, they're 3x the 16px originals)
   terrain.png  - ground autotiles (grass, sand, tilled soil, dirt, water)
   fences.png   - fences and garden beds
@@ -102,7 +102,7 @@ PLANTS = {
 }
 
 # ground: 48x48 islands (3x3 autotile blocks) in terrain.png
-AUTOTILES = {'soil': (0, 128), 'path': (0, 64), 'driveway': (0, 0)}
+AUTOTILES = {'soil': (0, 128), 'path': (0, 64)}  # driveway is drawn as concrete in js/sprites.js
 GRASS_TILE = (48, 32)
 # barn pieces the house is assembled from (x0, y0, x1, y1 in the 256px barn)
 HOUSE_COLORS = ('red', 'teal', 'yellow', 'gray')
@@ -123,6 +123,22 @@ ME_WHITE_SIDING = ('me_150', 22, 160, 82, 194)   # siding + window unit, repeats
 ME_CREAM_SIDING = ('me_13', 96, 160, 112, 168)   # cream boards (8px, tiles vertically)
 ME_WINDOW_FRAMED = ('me_13', 48, 96, 80, 113)    # wood-framed window
 ME_DOOR = ('me_13', 32, 146, 48, 178)            # front door with glass panel
+ME_GARAGE = ('me_147', 36, 192, 102, 224)        # roll-up garage door, stretched to the driveway
+ME_CHIMNEY = ('me_14', 160, 166, 175, 191)       # stack; roof pixels around it are masked out
+ME_BOXES = {                                     # window flower boxes (trimmed to their bbox)
+    'red': ('me_13', 196, 64, 220, 76), 'purple': ('me_13', 196, 96, 220, 108),
+    'pink': ('me_13', 132, 112, 156, 124), 'white': ('me_13', 164, 112, 188, 124),
+    'yellow': ('me_13', 196, 112, 220, 124),
+}
+ME_POTS = {'round': ('me_13', 129, 15, 143, 32), 'cone': ('me_13', 145, 9, 159, 32)}
+
+# recolors: walls, roofs and doors keep the pack's shading, new hue
+BRICK_COLORS = {'brick': None, 'brick_tan': '#c8a57a', 'brick_white': '#e6e2da', 'brick_gray': '#8f8f96'}
+SIDING_COLORS = {'cream': None, 'blue': '#86a6c2', 'sage': '#a3b58c', 'gray': '#a9a9b0',
+                 'yellow': '#ead07e', 'navy': '#4d5f80'}
+ROOF_COLORS = {'black': ('gray', '#45454f'), 'blue': ('gray', '#4f6b8c'), 'green': ('red', '#557a4a')}
+DOOR_COLORS = {'wood': None, 'red': '#b23a30', 'blue': '#2f5d8c', 'green': '#3f6e48',
+               'black': '#33333b', 'white': '#ecebe6', 'yellow': '#e3b947'}
 FENCE_H = (304, 96)
 FENCE_V = (288, 112)
 
@@ -176,6 +192,38 @@ def tint(img, kind, target_hex):
     return img
 
 
+def recolor(img, target_hex, keep=None):
+    """Move every pixel (or those keep(x, y, h, s, v) accepts) to target_hex's
+    hue and saturation, scaling brightness around the group mean so the
+    pack's shading survives."""
+    img = img.copy()
+    px = img.load()
+    tr, tg, tb = (int(target_hex[i:i + 2], 16) / 255 for i in (1, 3, 5))
+    th, ts, tv = colorsys.rgb_to_hsv(tr, tg, tb)
+    pts = []
+    for y in range(img.height):
+        for x in range(img.width):
+            r, g, b, a = px[x, y]
+            if a < 128:
+                continue
+            h, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+            if keep is None or keep(x, y, h * 360, s, v):
+                pts.append((x, y, v))
+    if not pts:
+        return img
+    vmean = sum(v for _, _, v in pts) / len(pts)
+    for x, y, v in pts:
+        nv = max(0.06, min(1.0, tv * (v / vmean)))
+        r, g, b = colorsys.hsv_to_rgb(th, ts, nv)
+        px[x, y] = (round(r * 255), round(g * 255), round(b * 255), px[x, y][3])
+    return img
+
+
+def trim(img):
+    bb = img.getbbox()
+    return img.crop(bb) if bb else img
+
+
 def bbox_trim_top(img):
     """Crop transparent rows from the top only, keeping the bottom anchor."""
     bb = img.getbbox()
@@ -222,16 +270,44 @@ def wall_unit(width, texture, window=None, height=32):
     return u
 
 
-def add_suburban_walls(frames, me):
-    door = me(ME_DOOR)
+def add_suburban_walls(frames, windows, me):
+    """Brick and siding walls in several colors, doors, garage door, extras.
+    windows[wall] = [window center x, sill y] inside the wall unit, for flower boxes."""
     brick = me(ME_BRICK)
-    frames['house/wall/brick'] = wall_unit(48, brick, me(ME_WINDOW_WIDE))
+    for wid, color in BRICK_COLORS.items():
+        tex = recolor(brick, color) if color else brick
+        frames[f'house/wall/{wid}'] = wall_unit(48, tex, me(ME_WINDOW_WIDE))
+        windows[wid] = [24, 28]
     cream = me(ME_CREAM_SIDING)
-    frames['house/wall/cream'] = wall_unit(48, cream, me(ME_WINDOW_FRAMED))
+    for wid, color in SIDING_COLORS.items():
+        tex = recolor(cream, color) if color else cream
+        frames[f'house/wall/{wid}'] = wall_unit(48, tex, me(ME_WINDOW_FRAMED))
+        windows[wid] = [24, 24]
     white = me(ME_WHITE_SIDING)
     frames['house/wall/white'] = wall_unit(white.width, white.crop((0, 2, white.width, white.height)), None, 34)
-    for w in ('brick', 'cream', 'white'):
-        frames[f'house/door/{w}'] = door
+    windows['white'] = [30, 25]
+
+    door = me(ME_DOOR)
+    # the door leaf is warm wood; the doormat (bottom rows) and frame stay put
+    leaf = lambda x, y, h, s, v: y < 25 and 12 <= h <= 48 and s > 0.3
+    for name, color in DOOR_COLORS.items():
+        frames[f'house/door/{name}'] = recolor(door, color, leaf) if color else door
+
+    frames['house/garage'] = me(ME_GARAGE)
+    # chimney: drop the roof pixels around the stack (saturated browns)
+    chim = me(ME_CHIMNEY)
+    px = chim.load()
+    for y in range(chim.height):
+        for x in range(chim.width):
+            r, g, b, a = px[x, y]
+            h, s_, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+            if a and s_ > 0.3:
+                px[x, y] = (0, 0, 0, 0)
+    frames['house/chimney'] = trim(chim)
+    for name, spec in ME_BOXES.items():
+        frames[f'house/box/{name}'] = trim(me(spec))
+    for name, spec in ME_POTS.items():
+        frames[f'house/pot/{name}'] = trim(me(spec))
 
 
 def main():
@@ -256,7 +332,10 @@ def main():
 
     for name, spec in ME_ROOFS.items():
         frames[f'house/roof/{name}'] = me(spec)
-    add_suburban_walls(frames, me)
+    for name, (base, color) in ROOF_COLORS.items():
+        frames[f'house/roof/{name}'] = recolor(me(ME_ROOFS[base]), color)
+    windows = {}
+    add_suburban_walls(frames, windows, me)
 
     for color in HOUSE_COLORS:
         barn = load(f'barn_{color}.png')
@@ -312,8 +391,11 @@ def main():
         'frames': {k: list(v) for k, v in sorted(pos.items())},
         'autotiles': sorted(AUTOTILES),
         'tileVariants': {'grass': ['grass', 'grass_1', 'grass_2']},
-        'houseWalls': ['brick', 'cream', 'white'] + [f'barn_{c}' for c in HOUSE_COLORS],
-        'houseRoofs': ['gray', 'red', 'brown', 'metal'],
+        'houseWalls': list(BRICK_COLORS) + list(SIDING_COLORS) + ['white'] + [f'barn_{c}' for c in HOUSE_COLORS],
+        'houseRoofs': ['gray', 'black', 'red', 'brown', 'green', 'blue', 'metal'],
+        'houseDoors': list(DOOR_COLORS),
+        'houseBoxes': list(ME_BOXES),
+        'houseWindows': windows,
     }
     with open(os.path.join(a.out, 'manifest.json'), 'w') as f:
         json.dump(manifest, f, indent=1)

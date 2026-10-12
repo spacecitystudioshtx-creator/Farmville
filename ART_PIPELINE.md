@@ -23,8 +23,12 @@ python3 tools/slice_limezu.py --sheets /path/to/sheets --out assets/art
     `wall_unit()` in the slicer: trim, texture, centered window, foundation)
     and `barn_<color>` from the big barn sheets.
   - Roofs: `gray` shingle, `red`, `brown` (Modern Exteriors) and `metal` (barn).
+  - Color variants (`BRICK_COLORS`, `SIDING_COLORS`, `ROOF_COLORS`,
+    `DOOR_COLORS`) are recolors of those pieces that keep the pack's shading.
+  - Extras: garage door (`me_147`, stretched to the driveway width in
+    `drawGarageDoor`), chimney, window flower boxes, door planters.
   - Modern Exteriors input: the RPG Maker MV sheets are 3x the 16px art; copy
-    `Tileset_13/14/150/155_MV.png` as `me_13.png` etc. and the slicer
+    `Tileset_13/14/147/150/155_MV.png` as `me_13.png` etc. and the slicer
     downsamples them. Crop boxes are `ME_*` constants in the slicer.
 
 

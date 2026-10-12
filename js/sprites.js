@@ -70,14 +70,40 @@
         px(ctx, x, y, sx, sy + sh - 1, sw, 1, '#9c8d6d'); // bottom shade
       }
     },
+    // poured concrete slabs, matching the sidewalk; dark edge where it meets lawn
     driveway(ctx, x, y) {
-      px(ctx, x, y, 0, 0, 16, 16, '#9c9c9c');
-      if (y % 3 === 0) px(ctx, x, y, 0, 0, 16, 1, '#828282'); // expansion joints
-      if (x % 2 === 0) px(ctx, x, y, 0, 0, 1, 16, '#8a8a8a');
-      for (let i = 0; i < 5; i++) { // aggregate speckle
-        px(ctx, x, y, Math.floor(hash(x, y, 60 + i) * 15), Math.floor(hash(x, y, 70 + i) * 15), 1, 1,
-          i % 2 ? '#a8a8a8' : '#8f8f8f');
+      px(ctx, x, y, 0, 0, 16, 16, '#bcb7ab');
+      for (let i = 0; i < 6; i++)
+        px(ctx, x, y, Math.floor(hash(x, y, 60 + i) * 16), Math.floor(hash(x, y, 70 + i) * 16), 1, 1, i % 2 ? '#c8c3b8' : '#aea99d');
+      if (y % 2 === 0) px(ctx, x, y, 0, 0, 16, 1, '#a39e92'); // expansion joints
+      if (x % 2 === 0) px(ctx, x, y, 0, 0, 1, 16, '#a39e92');
+      const paved = t => t === 'driveway' || t === 'street' || t === 'house' || t == null;
+      if (!paved(at(x - 1, y))) px(ctx, x, y, 0, 0, 1, 16, '#77736a');
+      if (!paved(at(x + 1, y))) px(ctx, x, y, 15, 0, 1, 16, '#77736a');
+      if (!paved(at(x, y - 1))) px(ctx, x, y, 0, 0, 16, 1, '#77736a');
+      if (!paved(at(x, y + 1))) px(ctx, x, y, 0, 15, 16, 1, '#77736a');
+    },
+    // the road out front: a sidewalk strip along the lot, asphalt beyond
+    street(ctx, x, y) {
+      const land = (dx, dy) => { const t = at(x + dx, y + dy); return t != null && t !== 'street'; };
+      if (land(0, -1) || land(-1, 0) || land(1, 0) || land(0, 1)) {
+        px(ctx, x, y, 0, 0, 16, 16, '#c9c5ba');
+        px(ctx, x, y, 0, 0, 1, 16, '#aaa59a');                       // slab joint
+        if (land(0, -1)) px(ctx, x, y, 0, 0, 16, 1, '#e0dcd2');
+        if (!land(0, 1) && at(x, y + 1) != null) { px(ctx, x, y, 0, 14, 16, 1, '#8f8a80'); px(ctx, x, y, 0, 15, 16, 1, '#6e6a62'); } // curb
+        return;
       }
+      px(ctx, x, y, 0, 0, 16, 16, '#55565f');
+      for (let i = 0; i < 7; i++)
+        px(ctx, x, y, Math.floor(hash(x, y, 80 + i) * 16), Math.floor(hash(x, y, 90 + i) * 16), 1, 1, i % 2 ? '#62636d' : '#4b4c55');
+      if (at(x, y + 1) == null && x % 2 === 0) px(ctx, x, y, 2, 14, 12, 2, '#e8c860'); // center line
+    },
+    // the neighbors' land: lawn, dimmed so your lot reads clearly
+    offlot(ctx, x, y) {
+      const g = window.ART && window.ART.tile('grass', x, y);
+      if (g) ctx.drawImage(g, x * TILE, y * TILE, TILE, TILE); else TERRAIN.grass(ctx, x, y);
+      ctx.fillStyle = 'rgba(28,40,34,0.45)';
+      ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
     },
     house(ctx, x, y) {
       // pack art: the whole house is drawn afterwards by drawHouses(); the
@@ -124,7 +150,8 @@
   // same terrain so beds don't get borders against the lot edge.
   function drawAutotile(ctx, block, type, x, y) {
     const piece = block.width / 3, q = piece / 2, dq = TILE / 2;
-    const same = (dx, dy) => { const t = at(x + dx, y + dy); return t == null || t === type; };
+    const joins = type === 'driveway' || type === 'path'; // paving runs into the street
+    const same = (dx, dy) => { const t = at(x + dx, y + dy); return t == null || t === type || (joins && t === 'street'); };
     for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
       const col = same(sx, 0) ? 1 : sx < 0 ? 0 : 2;
       const row = same(0, sy) ? 1 : sy < 0 ? 0 : 2;
@@ -134,72 +161,128 @@
     }
   }
 
-  // ---------- house from barn pieces ----------
+  // ---------- house from pack pieces ----------
+  // Style comes from the garden (YARD.state.home); pieces from the atlas.
   function houseArt() {
-    const A = window.ART;
-    if (!A || !A.houseStyle) return null;
-    const { wall: w, roof: r } = A.houseStyle();
-    const wall = A.get(`house/wall/${w}`), roof = A.get(`house/roof/${r}`);
+    const A = window.ART, Yd = window.YARD;
+    if (!A || !A.get || !Yd || !Yd.state.home) return null;
+    const h = Yd.state.home;
+    const wall = A.get(`house/wall/${h.wall}`) || A.get('house/wall/brick');
+    const roof = A.get(`house/roof/${h.roof}`) || A.get('house/roof/gray');
     if (!wall || !roof) return null;
-    return { roof, wall, pillar: A.get(`house/pillar/${w}`), door: A.get(`house/door/${w}`), k: A.plantScale() };
+    const barn = /^barn_/.test(h.wall);
+    return {
+      roof, wall, k: A.plantScale(), stories: h.stories || 1,
+      pillar: A.get(`house/pillar/${h.wall}`),
+      door: (barn ? A.get(`house/door/${h.wall}`) : A.get(`house/door/${h.door}`)) || A.get('house/door/wood'),
+      garage: A.get('house/garage'),
+      chimney: h.chimney ? A.get('house/chimney') : null,
+      box: h.boxes && !barn ? A.get(`house/box/${h.boxes}`) : null,
+      sill: A.houseWindow(h.wall),
+      pots: h.pots ? [A.get('house/pot/round'), A.get('house/pot/cone')] : null,
+    };
   }
 
-  // Each column of house tiles: metal roof down to the front wall, then a
-  // slice of the repeating wall (eave, boards, windows, foundation). Slices
-  // are offset by world x so neighboring columns join into one wall. Corner
-  // posts cap each wall run; a door sits wherever a path meets the house.
+  // Each column of house tiles: roof down to the front wall, then one slice
+  // of the repeating wall per story (eave, siding, window, foundation). Slices
+  // are offset by world x so neighboring columns join into one wall. Then the
+  // details: corner posts, a front door where a path meets the house, a garage
+  // door across a driveway, flower boxes under windows, planters, chimney.
   function drawHouses(ctx) {
     const art = houseArt();
     if (!art) return false;
-    const { roof, wall, pillar, door, k } = art;
+    const { roof, wall, pillar, door, garage, chimney, box, sill, pots, k } = art;
     const W = window.YARD.W, H = window.YARD.H;
-    const wallH = wall.height * k;
     const isHouse = (x, y) => at(x, y) === 'house';
+    const native = TILE / k, unitH = wall.height * k;
     const outline = '#2b2433';
+    const later = [];  // details go on top of every wall slice
+    const fronts = {}; // x -> front row of the run that ends lowest, for spans
     for (let x = 0; x < W; x++) {
       for (let y = 0; y < H; y++) {
         if (!isHouse(x, y) || isHouse(x, y - 1)) continue;
         let y1 = y;
         while (isHouse(x, y1 + 1)) y1++;
         const top = y * TILE, bot = (y1 + 1) * TILE, left = x * TILE;
-        const wh = Math.min(wallH, bot - top - 8);
-        const wallTop = bot - wh;
+        const wh = Math.min(unitH, bot - top - 8);
+        const stories = wh < unitH ? 1 : Math.max(1, Math.min(art.stories, Math.floor((bot - top - 24) / unitH)));
+        const wallTop = bot - wh * stories;
         // roof
         ctx.save();
         ctx.beginPath(); ctx.rect(left, top, TILE, wallTop - top); ctx.clip();
         for (let ty = y; ty * TILE < wallTop; ty++) ctx.drawImage(roof, left, ty * TILE, TILE, TILE);
         ctx.restore();
-        // wall slice: native columns [sx, sx+16) of the repeating wall, wrapping
-        const native = TILE / k;
-        let sx = (x * native) % wall.width, dx = 0;
+        // wall slices, one per story: native columns [sx, sx+16) of the unit, wrapping
         const sy = wall.height - wh / k;
-        while (dx < native) {
-          const w = Math.min(native - dx, wall.width - sx);
-          ctx.drawImage(wall, sx, sy, w, wh / k, left + dx * k, wallTop, w * k, wh);
-          dx += w; sx = 0;
+        for (let s = 0; s < stories; s++) {
+          const base = bot - wh * s;
+          let sx = (x * native) % wall.width, dx = 0;
+          while (dx < native) {
+            const w = Math.min(native - dx, wall.width - sx);
+            ctx.drawImage(wall, sx, sy, w, wh / k, left + dx * k, base - wh, w * k, wh);
+            dx += w; sx = 0;
+          }
+          // flower box under any window whose center falls in this column
+          if (box && sill && wh === unitH) {
+            const c = Math.ceil((x * native - sill[0]) / wall.width) * wall.width + sill[0];
+            const below = at(x, y1 + 1);
+            if (c < (x + 1) * native && !(s === 0 && (below === 'path' || below === 'driveway')))
+              later.push(() => ctx.drawImage(box, (c - box.width / 2) * k, base - unitH + (sill[1] - 3) * k, box.width * k, box.height * k));
+          }
         }
         // outline where the house meets yard
         ctx.fillStyle = outline;
-        if (!isHouse(x, y - 1)) ctx.fillRect(left, top, TILE, 2);
+        ctx.fillRect(left, top, TILE, 2);
         for (let ty = y; ty <= y1; ty++) {
           if (!isHouse(x - 1, ty)) ctx.fillRect(left, ty * TILE, 2, TILE);
           if (!isHouse(x + 1, ty)) ctx.fillRect(left + TILE - 2, ty * TILE, 2, TILE);
         }
         // corner posts at the ends of this wall run
-        if (pillar) {
-          const ph = Math.min(pillar.height * k, wh), py = bot - ph, psy = pillar.height - ph / k;
-          if (!isHouse(x - 1, y1)) ctx.drawImage(pillar, 0, psy, pillar.width, ph / k, left, py, pillar.width * k, ph);
-          if (!isHouse(x + 1, y1)) ctx.drawImage(pillar, 0, psy, pillar.width, ph / k, left + TILE - pillar.width * k, py, pillar.width * k, ph);
+        if (pillar) later.push(() => {
+          const ph = Math.min(pillar.height * k, wh * stories), py = bot - ph, psy = Math.max(0, pillar.height - ph / k);
+          const pw = pillar.width * k;
+          if (!isHouse(x - 1, y1)) ctx.drawImage(pillar, 0, psy, pillar.width, ph / k, left, py, pw, ph);
+          if (!isHouse(x + 1, y1)) ctx.drawImage(pillar, 0, psy, pillar.width, ph / k, left + TILE - pw, py, pw, ph);
+        });
+        const below = at(x, y1 + 1);
+        // front door where the walk arrives, planters either side
+        if (door && below === 'path') later.push(() => {
+          const dh = Math.min(door.height * k, wh), dw = door.width * k, cx = left + TILE / 2;
+          ctx.drawImage(door, 0, door.height - dh / k, door.width, dh / k, cx - dw / 2, bot - dh, dw, dh);
+          if (pots) pots.forEach((p, i) => p && ctx.drawImage(p, i ? cx + dw / 2 + 2 : cx - dw / 2 - 2 - p.width * k, bot + 10 - p.height * k, p.width * k, p.height * k));
+        });
+        // garage door across the run of driveway columns that meet this wall
+        if (garage && below === 'driveway' && !(at(x - 1, y1 + 1) === 'driveway' && fronts[x - 1] === y1)) {
+          let n = 1;
+          while (at(x + n, y1 + 1) === 'driveway' && isHouse(x + n, y1) && !isHouse(x + n, y1 + 1)) n++;
+          later.push(() => drawGarageDoor(ctx, garage, k, left + 2, bot, n * TILE - 4, Math.min(garage.height * k, wh - 6)));
         }
-        // door where the front walk arrives
-        if (door && at(x, y1 + 1) === 'path') {
-          const dh = Math.min(door.height * k, wh), dw = door.width * k;
-          ctx.drawImage(door, 0, door.height - dh / k, door.width, dh / k, left + TILE / 2 - dw / 2, bot - dh, dw, dh);
-        }
+        fronts[x] = y1;
         y = y1;
       }
     }
+    later.forEach(f => f());
+    if (chimney) { // near the left end of the topmost roof row
+      let cy = -1, cx = -1;
+      for (let y = 0; y < H && cy < 0; y++) for (let x = 0; x < W; x++) if (isHouse(x, y)) { cy = y; cx = x; break; }
+      if (cy >= 0) {
+        const tx = isHouse(cx + 2, cy) ? cx + 2 : cx;
+        ctx.drawImage(chimney, tx * TILE + 4, cy * TILE + 26 - chimney.height * k, chimney.width * k, chimney.height * k);
+      }
+    }
     return true;
+  }
+
+  // roll-up door stretched to any width: keep its edges, repeat its middle
+  function drawGarageDoor(ctx, img, k, x, bottom, width, height) {
+    const e = 4, sh = height / k, sy = img.height - sh, top = bottom - height;
+    const mid = img.width - 2 * e;
+    ctx.drawImage(img, 0, sy, e, sh, x, top, e * k, height);
+    for (let dx = e * k; dx < width - e * k; dx += mid * k) {
+      const w = Math.min(mid * k, width - e * k - dx);
+      ctx.drawImage(img, e, sy, w / k, sh, x + dx, top, w, height);
+    }
+    ctx.drawImage(img, img.width - e, sy, e, sh, x + width - e * k, top, e * k, height);
   }
 
   // picket fence overlay for the lot border (drawn on grass border tiles)

@@ -189,8 +189,11 @@ input, textarea { -webkit-user-select: text; user-select: text; }
 .sw-grass { background: #5fa348; }
 .sw-soil { background: repeating-linear-gradient(#653f22 0 5px, #4a2f1a 5px 7px); }
 .sw-path { background: #b3a27f; box-shadow: inset 0 0 0 3px #94846a; }
-.sw-drive { background: #9c9c9c; }
+.sw-drive { background: #bcb7ab; }
 .sw-house { background: repeating-linear-gradient(#9c4f30 0 4px, #7e3c24 4px 6px); }
+.sw-offlot { background: repeating-linear-gradient(45deg, #3b4a3c 0 4px, #56664f 4px 8px); }
+.sw-home { background: var(--paper-2); display: grid; place-items: center; }
+.sw-home .ico { width: 18px; height: 18px; }
 .sw-dig { background: var(--paper-2); position: relative; }
 .sw-dig::after { content: ''; position: absolute; inset: 5px; border-top: 3px solid var(--danger); transform: rotate(-45deg) translate(-2px, 6px); }
 
@@ -252,6 +255,7 @@ input, textarea { -webkit-user-select: text; user-select: text; }
 }
 .sheet.open { transform: none; }
 .sheet.full { height: calc(100dvh - var(--hud-h) - var(--safe-t) - 8px); }
+.sheet.short:not(.full) { height: 50dvh; }
 .sheet-grip { padding: 8px 0 2px; display: grid; place-items: center; touch-action: none; cursor: grab; }
 .sheet-grip span { width: 54px; height: 6px; border-radius: 3px; background: var(--paper-line); }
 .sheet-head { display: flex; align-items: center; gap: 8px; padding: 2px 14px 8px 16px; border-bottom: 2px dashed var(--paper-line); }
@@ -555,3 +559,17 @@ textarea.search { min-height: 76px; resize: vertical; }
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
+
+/* house builder */
+.chips.wrap { flex-wrap: wrap; overflow: visible; }
+.chips .dot { display: inline-block; width: 14px; height: 14px; margin-right: 6px; vertical-align: -2px; border: 2px solid var(--wood-900); border-radius: 4px; }
+.shapes { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; margin-top: 8px; }
+.shapes button { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px 6px; background: var(--paper); border: 2px solid var(--wood-900); border-radius: 10px; font-family: var(--pixel); font-size: 14px; }
+.shapes button.active { background: var(--gold-2); }
+.shape-ico { width: 64px; height: 36px; fill: #b3563a; stroke: var(--wood-900); stroke-width: .35; }
+.nudge { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.nudge button { padding: 8px 0; font-size: 20px; line-height: 1; background: var(--paper); border: 2px solid var(--wood-900); border-radius: 10px; }
+.nudge button:active { background: var(--gold-2); }
+.lots { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.choice.lot { flex-direction: column; align-items: stretch; text-align: left; padding: 8px; gap: 6px; }
+.lot-ico { width: 100%; height: auto; border: 2px solid var(--wood-900); border-radius: 6px; image-rendering: pixelated; shape-rendering: crispEdges; }
