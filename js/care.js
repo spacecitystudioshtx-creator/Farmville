@@ -69,12 +69,10 @@
     if (def.type !== 'tree') {
       const sun = Y().sunAt(x, y);
       const tree = sun.by ? window.PLANT_BY_ID[sun.by.id].name : '';
-      if (def.sun === 'full sun' && sun.level === 'part') {
-        out.push({ kind: 'sun', text: `Partial shade from your ${tree}: ${def.name} wants full sun, so expect fewer blooms here.` });
-      } else if (def.sun === 'full sun' && sun.level === 'shade') {
-        out.push({ kind: 'sun', text: `Deep shade under your ${tree}: ${def.name} needs full sun and will struggle here.` });
-      } else if (def.sun === 'shade' && sun.level === 'full') {
-        out.push({ kind: 'sun', text: `Full sun: ${def.name} prefers shade and will scorch in a Houston summer.` });
+      if (!def.sunRange.includes(sun.level)) {
+        if (sun.level === 'part') out.push({ kind: 'sun', text: `Partial shade from your ${tree}: ${def.name} needs full sun, so expect fewer blooms here.` });
+        else if (sun.level === 'shade') out.push({ kind: 'sun', text: `Deep shade under your ${tree}: ${def.name} needs ${LIGHT[def.sunRange[0]]} and will struggle here.` });
+        else out.push({ kind: 'sun', text: `Full sun: ${def.name} wants shade and will scorch in a Houston summer.` });
       }
     }
     // crowding: closest neighbor closer than ~60% of the combined half-spreads
@@ -95,6 +93,136 @@
       if (near) out.push({ kind: 'house', text: `Close to the house: a ${def.name} needs about 15 ft from the foundation for its roots and limbs.` });
     }
     return out;
+  }
+
+  // ---------- labels ----------
+  const LIGHT = { full: 'full sun', part: 'part shade', shade: 'shade' };
+  // 'Full sun' | 'Sun or part shade' | 'Sun to shade' | 'Part shade to shade' ...
+  function sunLabel(def) {
+    const r = def.sunRange;
+    if (r.length === 3) return 'Sun to shade';
+    if (r.length === 1) return LIGHT[r[0]].charAt(0).toUpperCase() + LIGHT[r[0]].slice(1);
+    return r[0] === 'full' ? 'Sun or part shade' : 'Part shade to shade';
+  }
+  function lifeLabel(def) {
+    if (def.life === 'woody') return { tree: 'Tree', shrub: 'Shrub', vine: 'Vine' }[def.type];
+    return { perennial: 'Perennial', annual: 'Annual', reseeds: 'Reseeding annual' }[def.life];
+  }
+
+  // ---------- what to plant: ranking ----------
+  // Mirrors how a gardener decides (see PLANT_PICKING.md): right time, right
+  // light, room for it, what the garden is missing, how easy it is, variety.
+  // Every plant in the catalog already survives Houston, so climate is a given.
+  // spot: optional {x, y} the player tapped; ranks for that exact tile.
+  function gardenContext(spot) {
+    const yard = Y(), plants = yard.allPlants();
+    const open = { full: 0, part: 0, shade: 0 };
+    const house = yard.houseTiles();
+    const trees = plants.filter(p => p.def.type === 'tree');
+    const far = (list, x, y, d) => list.every(([ax, ay]) => Math.hypot(ax - x, ay - y) >= d);
+    const treeXY = trees.map(p => [p.x, p.y]);
+    let treeRoom = false; // a spot 15 ft from the house and other trees, for a big shade tree
+    for (let y = 0; y < yard.H; y++) for (let x = 0; x < yard.W; x++) {
+      if (!yard.canPlantAt(x, y) || !yard.inLot(x, y)) continue;
+      open[yard.sunAt(x, y).level]++;
+      if (!treeRoom && far(house, x, y, 5) && far(treeXY, x, y, 5)) treeRoom = true;
+    }
+    const edibles = plants.filter(p => p.def.type === 'edible').length;
+    const bloom = Array(12).fill(0), wild = { butterflies: 0, hummingbirds: 0, bees: 0, birds: 0 }, have = {};
+    for (const p of plants) {
+      for (const m of p.def.bloomMonths) bloom[m - 1]++;
+      for (const w of p.def.wildlife) wild[w]++;
+      have[p.def.id] = (have[p.def.id] || 0) + 1;
+    }
+    let s = null;
+    if (spot && yard.canPlantAt(spot.x, spot.y) && yard.inLot(spot.x, spot.y)) {
+      s = { x: spot.x, y: spot.y, level: yard.sunAt(spot.x, spot.y).level, terrain: yard.terrainAt(spot.x, spot.y),
+        houseDist: house.reduce((d, [hx, hy]) => Math.min(d, Math.hypot(hx - spot.x, hy - spot.y)), Infinity),
+        underTree: !far(treeXY, spot.x, spot.y, 4) };
+    }
+    return { open, totalOpen: open.full + open.part + open.shade, treeRoom, trees: trees.length, bloom, wild, have,
+      total: plants.length, edibleShare: plants.length ? edibles / plants.length : 0, spot: s };
+  }
+
+  function monthsUntil(def, m) {
+    for (let i = 0; i < 12; i++) if (def.plantMonths.includes(((m - 1 + i) % 12) + 1)) return i;
+    return 12;
+  }
+
+  // -> { score, reasons: [text] (best first), blocker: text|null }
+  function scorePlant(def, ctx, m) {
+    let score = 0;
+    const pros = [], cons = [];
+    const add = (w, text) => { score += w; if (text) (w >= 0 ? pros : cons).push({ w, text }); };
+
+    // 1. timing: in the ground at the right time of year
+    const wait = monthsUntil(def, m);
+    if (wait === 0) add(40, def.plantMonths.includes((m % 12) + 1) ? 'Plant now' : 'Last month to plant');
+    else if (wait === 1) add(15, 'Plant next month');
+    else if (wait === 2) add(5, null);
+    if (wait > 0) cons.push({ w: -30, text: `Plant ${monthList(def.plantMonths)}` }); // shown, not scored
+
+    // 2. light: a spot it will thrive in
+    if (ctx.spot) {
+      if (def.sunRange.includes(ctx.spot.level)) add(def.sunPref === ctx.spot.level ? 33 : 25, `Suits this spot's ${LIGHT[ctx.spot.level]}`);
+      else add(-60, `Needs ${def.sunRange.map(l => LIGHT[l]).join(' or ')}; this spot is ${LIGHT[ctx.spot.level]}`);
+    } else if (ctx.totalOpen) {
+      const fit = def.sunRange.reduce((n, l) => n + ctx.open[l], 0);
+      if (!fit) add(-50, `No open spot with ${def.sunRange.map(l => LIGHT[l]).join(' or ')}`);
+      else {
+        const share = fit / ctx.totalOpen;
+        const shady = ctx.open.part + ctx.open.shade;
+        add(Math.round(20 * share), def.sunRange.includes('shade') && ctx.open.shade >= 3 ? 'Grows in your shady spots'
+          : def.sunRange.includes('part') && shady >= 6 && def.sunPref !== 'full' ? 'Fits your part-shade spots' : null);
+      }
+    }
+
+    // 3. room: big shade trees need ~15 ft from the house and other trees;
+    // small understory trees (redbud, plum, possumhaw) ~9 ft from the house
+    if (def.type === 'tree') {
+      const big = def.heightFt >= 30;
+      if (ctx.spot && ctx.spot.houseDist < (big ? 5 : 3)) add(-40, 'Too close to the house for a tree');
+      else if (ctx.spot && big && ctx.spot.underTree) add(-35, 'Under another tree’s canopy');
+      else if (!ctx.spot && big && !ctx.treeRoom) add(-35, 'No room left for another big tree');
+      else if (ctx.trees >= 4) add(-10, null);
+    }
+
+    // 4. goals: natives, wildlife (host plants most of all), food
+    if (def.native) add(12, null);
+    if (def.hostFor) add(10, `Caterpillar host for ${def.hostFor}`);
+    for (const w of def.wildlife) {
+      if (!ctx.wild[w]) add(6, `Your first plant for ${w}`);
+      else add(2, null);
+    }
+    // food: more so if you already grow some (that's a goal you've shown)
+    if (def.type === 'edible' && wait === 0) add(8 + Math.round(12 * ctx.edibleShare), 'Fresh food from this season');
+
+    // 5. what's missing: blooms in months the garden has none
+    const gap = def.bloomMonths.filter(mm => !ctx.bloom[mm - 1]);
+    if (gap.length && def.type !== 'edible') add(Math.min(15, gap.length * 3), `Blooms when your garden doesn't (${monthList(gap)})`);
+
+    // 6. ease: Houston summers favor low-water plants once established
+    if (def.water === 'low') add(6, 'Low water once established');
+    else if (def.water === 'high') add(-4, null);
+
+    // 7. variety: each one you already have counts against another
+    const n = ctx.have[def.id] || 0;
+    if (n) add(-Math.min(20, n * 5), `You have ${n} already`);
+
+    pros.sort((a, b) => b.w - a.w);
+    cons.sort((a, b) => a.w - b.w);
+    return { score, reasons: pros.map(p => p.text), blocker: cons[0] ? cons[0].text : null };
+  }
+
+  // [{ def, score, reasons, blocker }] best first
+  function rankPlants(list, spot) {
+    const ctx = gardenContext(spot), m = thisMonth();
+    return {
+      ctx,
+      ranked: (list || window.PLANTS)
+        .map(def => Object.assign({ def }, scorePlant(def, ctx, m)))
+        .sort((a, b) => b.score - a.score || a.def.name.localeCompare(b.def.name)),
+    };
   }
 
   function insights() {
@@ -128,5 +256,8 @@
     };
   }
 
-  window.CARE = { MONTHS, monthList, waterStatus, waterInterval, isEstablishing, thirstyPlants, plantingWarnings, insights, thisMonth };
+  window.CARE = {
+    MONTHS, LIGHT, monthList, waterStatus, waterInterval, isEstablishing, thirstyPlants, plantingWarnings, insights, thisMonth,
+    sunLabel, lifeLabel, gardenContext, scorePlant, rankPlants,
+  };
 })();

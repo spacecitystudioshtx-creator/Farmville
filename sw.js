@@ -1,5 +1,5 @@
 // GardenStar service worker: cache-first app shell, network-only weather.
-const CACHE = 'gardenstar-v4';
+const CACHE = 'gardenstar-v5';
 const SHELL = [
   './', 'index.html', 'css/style.css', 'manifest.webmanifest',
   'js/config.js', 'js/plants.js', 'js/art.js', 'js/sprites.js', 'js/grid.js',

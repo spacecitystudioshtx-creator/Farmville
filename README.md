@@ -116,6 +116,8 @@ double down on the one that does. Time the big pushes to the two gardening surge
 - **Garden report**: native share, wildlife plants, months in bloom, and natives
   that would fill bloom gaps. Journal of everything you've done.
 - **Live weather** (Open-Meteo) with Houston monthly averages as a fallback.
+- **What to plant**: the shop ranks plants like a local gardener would for your yard this
+  month (season, your light, room, bloom gaps, wildlife) and says why. See PLANT_PICKING.md.
 - **Welcome flow**: demo yard, build your own (pick a lot shape, then a preset house you can
   restyle), or describe your yard to Claude.
 - **Undo**, backup/restore, share a picture of your yard, installable PWA.

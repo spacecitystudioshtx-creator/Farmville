@@ -82,13 +82,19 @@ async function run(browser, label, contextOpts, mobile) {
   // plant an in-season, full-sun native on an open bed tile
   const month = new Date().getMonth() + 1;
   const ids = await page.evaluate(m => ({
-    good: window.PLANTS.find(p => p.native && p.type !== 'tree' && p.sun === 'full sun' && p.plantMonths.includes(m) && p.spacingFt <= 3).id,
+    good: window.PLANTS.find(p => p.native && p.type !== 'tree' && p.sunRange.join() === 'full' && p.plantMonths.includes(m) && p.spacingFt <= 3).id,
     off: window.PLANTS.find(p => p.type !== 'tree' && !p.plantMonths.includes(m) && p.spacingFt <= 2).id,
   }), month);
   await page.evaluate(() => document.querySelector('.toolbar [data-tool="plant"]').click());
   await page.waitForTimeout(250);
   check('Plant opens the shop', (await page.textContent('#sheet-title')) === 'Plant shop');
   check('shop lists in-season plants', (await page.$$('.item[data-pick]')).length > 0);
+  const top = await page.$$eval('.item[data-pick]', els => els.slice(0, 5).map(e => e.dataset.pick));
+  check('best picks lead with plants that go in the ground now', await page.evaluate(([ids, m]) =>
+    ids.every(id => window.PLANT_BY_ID[id].plantMonths.includes(m)), [top, month]), top);
+  const tags = await page.textContent('.item[data-pick] .tags');
+  check('tags show life cycle and light', /Perennial|Annual|Reseeding annual|Tree|Shrub|Vine/.test(tags) && /sun|shade/i.test(tags), tags);
+  check('each pick says why', ((await page.textContent('.item[data-pick] .why')) || '').length > 5);
   await shot(page, label + '-3-shop');
   await page.click(`[data-pick="${ids.good}"]`);
   await page.waitForTimeout(150);
@@ -141,6 +147,22 @@ async function run(browser, label, contextOpts, mobile) {
   }, [spot.x, spot.y]));
   await page.evaluate(() => window.__GS.openSheet('shop'));
   await page.click('[data-mode="new"]');
+  await page.evaluate(() => window.__GS.closeSheet());
+  await page.waitForTimeout(300);
+
+  // tap a shady spot, then Plant: picks are ranked for that spot and plant straight into it
+  await page.evaluate(() => document.querySelector('.toolbar [data-tool="look"]').click());
+  await tap(page, mobile, await tilePoint(page, 31, 19));
+  await page.evaluate(() => document.querySelector('.toolbar [data-tool="plant"]').click());
+  await page.waitForTimeout(250);
+  check('shop ranks for the tapped spot', /spot you tapped \(shade/.test(await page.textContent('.rank-note')));
+  const spotPick = await page.$eval('.item[data-pick]', e => e.dataset.pick);
+  check('top pick for deep shade tolerates shade', await page.evaluate(id => window.PLANT_BY_ID[id].sunRange.includes('shade'), spotPick), spotPick);
+  await page.click(`[data-pick="${spotPick}"]`);
+  await page.waitForTimeout(250);
+  if (await page.isVisible('#dialog')) { await page.click('#dialog-box .btn:not(.alt)'); await page.waitForTimeout(200); }
+  check('picking it plants it in that spot', (await plantAt(page, 31, 19)) === spotPick);
+  await page.evaluate(() => window.__GS.openSheet('shop'));
   await page.evaluate(() => window.__GS.closeSheet());
   await page.waitForTimeout(300);
 

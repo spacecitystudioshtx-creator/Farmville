@@ -253,7 +253,34 @@ const HOST_FOR = {
   passionvine: 'gulf fritillaries',
   frogfruit: 'phaon crescents and buckeyes',
 };
+// Life cycle. Woody plants (trees, shrubs, vines) are permanent; 'reseeds' is
+// an annual that comes back from its own seed if you let it.
+const LIFE = {
+  blackeyedsusan: 'reseeds', indianblanket: 'reseeds',
+  falltomato: 'annual', pepper: 'annual', bushbeans: 'annual', cucumber: 'annual', squash: 'annual',
+  broccoli: 'annual', kale: 'annual', lettuce: 'annual', carrot: 'annual', radish: 'annual',
+  spinach: 'annual', garlic: 'annual', cilantro: 'annual', basil: 'annual',
+};
+// Light each plant tolerates in Houston: full = 6+ hours of sun, part = 3-6,
+// shade = under 3. `sun` above is the light it does best in.
+const SUN_RANGE = {
+  turkscap: 'full part shade', gcmuhly: 'full', txlantana: 'full', autumnsage: 'full part',
+  scarletsage: 'full part', mistflower: 'full part', flameacanthus: 'full part',
+  blackeyedsusan: 'full part', coneflower: 'full part', indianblanket: 'full', winecup: 'full part',
+  mealysage: 'full part', cardinalflower: 'full part', aquaticmilkweed: 'full part',
+  frogfruit: 'full part', seaoats: 'part shade', littlebluestem: 'full', beautyberry: 'full part shade',
+  yaupon: 'full part shade', coralhoneysuckle: 'full part', passionvine: 'full part',
+  buttonbush: 'full part', liveoak: 'full part', pecan: 'full', txredbud: 'full part',
+  mexicanplum: 'full part', possumhaw: 'full part shade',
+  falltomato: 'full', pepper: 'full', bushbeans: 'full', cucumber: 'full', squash: 'full',
+  broccoli: 'full', garlic: 'full', kale: 'full part', lettuce: 'full part', carrot: 'full part',
+  radish: 'full part', spinach: 'full part', cilantro: 'full part', basil: 'full part',
+};
+const SUN_LEVEL = { 'full sun': 'full', 'part shade': 'part', shade: 'shade' };
 for (const p of window.PLANTS) {
+  p.life = LIFE[p.id] || (['tree', 'shrub', 'vine'].includes(p.type) ? 'woody' : 'perennial');
+  p.sunPref = SUN_LEVEL[p.sun];
+  p.sunRange = (SUN_RANGE[p.id] || p.sunPref).split(' ');
   p.wildlife = WILDLIFE[p.id] || [];
   p.hostFor = HOST_FOR[p.id] || null;
   p.harvestable = p.type === 'edible';

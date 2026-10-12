@@ -16,12 +16,12 @@ Scripts load in order from `index.html`; each exposes one global.
 | File | Global | Role |
 |---|---|---|
 | `js/config.js` | `SITE` | Address, coords, grid size, monetization switches (all off) |
-| `js/plants.js` | `PLANTS`, `PLANT_BY_ID` | 41-plant Houston catalog + wildlife / host tags |
+| `js/plants.js` | `PLANTS`, `PLANT_BY_ID` | 41-plant Houston catalog + wildlife / host tags, light range (`sunRange`), life cycle (`life`) |
 | `js/art.js` | `ART` | Optional image tileset from `assets/art/manifest.json` with facsimile fallback |
 | `js/sprites.js` | `SPRITES` | Procedural pixel renderer; uses `ART` images when present |
 | `js/grid.js` | `YARD` | Garden state (terrain, plants, journal, lost), shade, undo, save v2 |
 | `js/weather.js` | `WEATHER` | Open-Meteo, falls back to Houston monthly normals |
-| `js/care.js` | `CARE` | Watering status, planting warnings, garden insights (pure) |
+| `js/care.js` | `CARE` | Watering status, planting warnings, garden insights, "what to plant" ranking (pure) |
 | `js/game.js` | `GAME` | XP, levels, streak, badges, quests; emits events |
 | `js/importer.js` | `IMPORTER` | Backup + Claude-interview JSON import |
 | `js/icons.js` | `ICONS` | 12×12 pixel icons from character maps |
@@ -53,6 +53,9 @@ action also takes back its XP.
   The free Sprout Lands pack is non-commercial: don't commit its assets.
 - Plant shop has "New planting" (warnings + XP) and "Already in my yard"
   (`YARD.addExisting`: full-grown, no warnings, no XP) plus a Trees filter.
+  New planting is ranked by `CARE.rankPlants` (timing, light, room, goals,
+  bloom gaps, ease, variety), for the whole yard or for an empty tile tapped
+  in Look. The plan and weights are in `PLANT_PICKING.md`; keep them in sync.
 
 ## Test
 ```bash

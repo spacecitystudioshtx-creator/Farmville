@@ -22,7 +22,7 @@
   const ui = {
     tool: 'look', plantId: null, terrain: 'soil',
     selected: null, hover: null, highlight: null, highlightUntil: 0,
-    weather: null, sheet: null, shopFilter: 'season', shopQuery: '', gardenTab: 'report', plantMode: 'new',
+    weather: null, sheet: null, shopFilter: 'all', shopQuery: '', gardenTab: 'report', plantMode: 'new',
   };
 
   // ---------- camera ----------
@@ -368,7 +368,7 @@
     const terr = Y.terrainAt(t.x, t.y);
     const sun = Y.sunAt(t.x, t.y);
     const by = sun.by ? ` from your ${window.PLANT_BY_ID[sun.by.id].name}` : '';
-    const hint = Y.isPlantable(t.x, t.y) ? ' Tap Plant to add something here.'
+    const hint = Y.isPlantable(t.x, t.y) && Y.inLot(t.x, t.y) ? ' Tap Plant for the best picks for this spot.'
       : terr === 'house' ? ' Garden > More > Your house to change it.' : '';
     toast(`<b>${terrainNames[terr]}</b> · ${sunWords[sun.level]}${esc(by)}.${hint}`);
   }
@@ -521,7 +521,13 @@
 
   document.querySelectorAll('.toolbar [data-tool]').forEach(b => b.onclick = () => {
     const tool = b.dataset.tool;
-    if (tool === 'plant') { setTool('plant'); if (!ui.plantId) openSheet('shop'); else closeSheet(); return; }
+    if (tool === 'plant') {
+      // a spot you just looked at gets picks for that spot
+      const fresh = !ui.plantId || (ui.tool === 'look' && shopSpot());
+      setTool('plant');
+      if (fresh) openSheet('shop'); else closeSheet();
+      return;
+    }
     setTool(tool);
     closeSheet();
   });
@@ -595,37 +601,52 @@
     if (ui.shopFilter === 'wildlife') list = list.filter(p => p.wildlife.length);
     if (ui.shopFilter === 'edible') list = list.filter(p => p.type === 'edible');
     if (ui.shopFilter === 'tree') list = list.filter(p => p.type === 'tree' || (p.type === 'shrub' && p.heightFt >= 8));
-    if (q) list = list.filter(p => (p.name + ' ' + p.botanical + ' ' + p.wildlife.join(' ')).toLowerCase().includes(q));
-    const score = p => (p.plantMonths.includes(m) ? 0 : 2) + (p.native ? 0 : 1);
-    return list.sort((a, b) => score(a) - score(b) || a.name.localeCompare(b.name));
+    if (q) list = list.filter(p => (p.name + ' ' + p.botanical + ' ' + p.wildlife.join(' ') + ' ' + C.lifeLabel(p) + ' ' + C.sunLabel(p)).toLowerCase().includes(q));
+    // mapping what already grows: you're looking for a name, so A to Z
+    if (ui.plantMode === 'existing') return { ctx: null, ranked: list.sort((a, b) => a.name.localeCompare(b.name)).map(def => ({ def })) };
+    // new planting: ranked like a gardener would advise, for a tapped spot or the whole yard
+    return C.rankPlants(list, shopSpot());
+  }
+  // the empty lot tile you last tapped, if any: the shop ranks for that spot
+  function shopSpot() {
+    const t = ui.selected;
+    return t && Y.canPlantAt(t.x, t.y) && Y.inLot(t.x, t.y) ? t : null;
   }
   function plantTags(def) {
     const m = month();
     const t = [];
     if (def.native) t.push('<span class="tag native">Native</span>');
     if (def.type === 'edible') t.push('<span class="tag edible">Edible</span>');
+    t.push(`<span class="tag life">${C.lifeLabel(def)}</span>`);
+    t.push(`<span class="tag sun sun-${def.sunRange.join('-')}">${C.sunLabel(def)}</span>`);
     t.push(def.plantMonths.includes(m) ? '<span class="tag now">Plant now</span>' : '<span class="tag off">Not now</span>');
     for (const w of def.wildlife) t.push(`<span class="tag wild">${w}</span>`);
     return t.join('');
   }
   const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
   function renderShop() {
-    const filters = [['season', 'Plant now'], ['tree', 'Trees'], ['native', 'Natives'], ['wildlife', 'Wildlife'], ['edible', 'Edibles'], ['all', 'All']];
-    const list = shopList();
+    const filters = [['all', ui.plantMode === 'existing' ? 'All' : 'Best picks'], ['season', 'Plant now'], ['tree', 'Trees'], ['native', 'Natives'], ['wildlife', 'Wildlife'], ['edible', 'Edibles']];
+    const { ctx, ranked } = shopList();
+    const spot = ctx && ctx.spot;
+    // "Plant now" is already a tag; the why line keeps the more urgent "Last month to plant"
+    const why = r => r.reasons ? `<span class="why">${esc(r.reasons.filter(t => t !== 'Plant now').slice(0, 3).join(' · '))}${r.blocker ? `<span class="why-not">${r.reasons.some(t => t !== 'Plant now') ? ' · ' : ''}${esc(r.blocker)}</span>` : ''}</span>` : '';
+    const rankNote = !ctx ? ''
+      : spot ? `<div class="rank-note">For the spot you tapped (<b>${C.LIGHT[spot.level]}</b>, ${spot.terrain === 'soil' ? 'bed' : 'lawn'}). Tap a pick to plant it there. <button class="linkbtn" id="shop-yard">Whole yard</button></div>`
+      : `<div class="rank-note">Best for your yard in ${C.MONTHS[C.thisMonth() - 1]}. Tap a spot on the map first for picks for that spot.</div>`;
     return {
       title: 'Plant shop',
       html: `<div class="seg"><button data-mode="new" class="${ui.plantMode === 'new' ? 'active' : ''}">New planting</button><button data-mode="existing" class="${ui.plantMode === 'existing' ? 'active' : ''}">Already in my yard</button></div>
-        <p class="small muted">${ui.plantMode === 'existing'
-          ? 'Map what already grows in your yard. It goes in full-grown, with no planting XP.'
-          : 'Natives in season earn the most XP.'}</p>
+        ${ui.plantMode === 'existing' ? '<p class="small muted">Map what already grows in your yard. It goes in full-grown, with no planting XP.</p>' : ''}
         <div class="chips">${filters.map(([k, l]) => `<button data-f="${k}" class="${ui.shopFilter === k ? 'active' : ''}">${l}</button>`).join('')}</div>
-        <input class="search" id="shop-q" type="search" placeholder="Search plants, or try &quot;butterflies&quot;" value="${esc(ui.shopQuery)}">
-        <div class="list">${list.map(p => `<div class="item" data-pick="${p.id}" role="button" tabindex="0">
+        <input class="search" id="shop-q" type="search" placeholder="Search plants, or try &quot;butterflies&quot; or &quot;shade&quot;" value="${esc(ui.shopQuery)}">
+        ${rankNote}
+        <div class="list">${ranked.map(r => { const p = r.def; return `<div class="item" data-pick="${p.id}" role="button" tabindex="0">
           ${swatchImg(p)}
           <span class="grow"><span class="name">${esc(p.name)}</span>
+          ${why(r)}
           <span class="tags">${plantTags(p)}</span>
-          <span class="meta">${cap(p.sun)} · ${p.water} water · ${p.heightFt} ft tall</span></span>
-          <button class="info" data-info="${p.id}" aria-label="About ${esc(p.name)}">i</button></div>`).join('') || '<p class="muted">No plants match. Try All.</p>'}</div>`,
+          <span class="meta">${p.water} water · ${p.heightFt} ft tall · ${p.spacingFt} ft apart</span></span>
+          <button class="info" data-info="${p.id}" aria-label="About ${esc(p.name)}">i</button></div>`; }).join('') || '<p class="muted">No plants match. Try All.</p>'}</div>`,
       bind(body) {
         body.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { ui.shopFilter = b.dataset.f; renderSheet(true); });
         body.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => {
@@ -636,15 +657,19 @@
         const qi = body.querySelector('#shop-q');
         qi.oninput = () => { ui.shopQuery = qi.value; const pos = qi.selectionStart; renderSheet(false); const n = $('shop-q'); n.focus(); n.setSelectionRange(pos, pos); };
         body.querySelectorAll('[data-info]').forEach(b => b.onclick = e => { e.stopPropagation(); openSheet('info', { id: b.dataset.info }); });
-        body.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => pickPlant(b.dataset.pick));
+        body.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => pickPlant(b.dataset.pick, spot));
+        const yb = $('shop-yard');
+        if (yb) yb.onclick = () => { ui.selected = null; requestDraw(); renderSheet(true); };
       },
     };
   }
-  function pickPlant(id) {
+  // picked from a spot-ranked list: plant straight into that spot
+  function pickPlant(id, spot) {
     ui.plantId = id;
     setTool('plant');
     closeSheet();
     const def = window.PLANT_BY_ID[id];
+    if (spot) { tryPlant(spot); return; }
     toast(`Selected <b>${esc(def.name)}</b>. Tap a bed or lawn tile to plant.`);
   }
 
@@ -659,7 +684,9 @@
     <div class="legend">${bloomCol ? `<span><i style="background:${bloomCol}"></i>In bloom</span>` : ''}<span><i style="background:var(--leaf)"></i>Planting window</span><span><i style="border:2px solid var(--wood-900)"></i>Now</span></div>`;
   }
   function facts(def) {
-    return `<dl class="facts"><dt>Sun</dt><dd>${cap(def.sun)}</dd><dt>Water</dt><dd>${cap(def.water)}</dd>
+    return `<dl class="facts"><dt>Sun</dt><dd>${C.sunLabel(def)}${def.sunRange.length > 1 ? ` (best in ${C.LIGHT[def.sunPref]})` : ''}</dd>
+      <dt>Lifespan</dt><dd>${{ perennial: 'Perennial: comes back every year', annual: 'Annual: one season, replant each year', reseeds: 'Annual that reseeds itself if you let it drop seed', woody: C.lifeLabel(def) + ': permanent, woody' }[def.life]}</dd>
+      <dt>Water</dt><dd>${cap(def.water)}</dd>
       <dt>Size</dt><dd>${def.heightFt} ft tall · space ${def.spacingFt} ft apart</dd>
       <dt>Plant</dt><dd>${C.monthList(def.plantMonths)}</dd>
       ${def.bloomMonths.length && def.bloom !== def.color ? `<dt>Blooms</dt><dd>${C.monthList(def.bloomMonths)}</dd>` : ''}</dl>`;
