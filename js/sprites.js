@@ -80,20 +80,12 @@
       }
     },
     house(ctx, x, y) {
-      // image-based house when pack art is loaded (roof + wall/window/door)
-      const A = window.ART;
-      if (A && A.get && A.get('house/roof')) {
-        const below = at(x, y + 1);
-        if (below !== 'house') {
-          let img = A.get('house/wall');
-          if (below === 'path' && A.get('house/door')) img = A.get('house/door');
-          else if (hash(x, y, 8) < 0.55 && A.get('house/window')) img = A.get('house/window');
-          if (img) { ctx.drawImage(img, x * TILE, y * TILE, TILE, TILE); return; }
-        } else {
-          const img = at(x, y - 1) !== 'house' ? (A.get('house/roof_top') || A.get('house/roof')) : A.get('house/roof');
-          ctx.drawImage(img, x * TILE, y * TILE, TILE, TILE);
-          return;
-        }
+      // pack art: the whole house is drawn afterwards by drawHouses(); the
+      // tile itself is lawn, which shows only where the art is transparent
+      if (houseArt()) {
+        const g = window.ART.tile('grass', x, y);
+        if (g) ctx.drawImage(g, x * TILE, y * TILE, TILE, TILE); else TERRAIN.grass(ctx, x, y);
+        return;
       }
       const wallBelow = at(x, y + 1) !== 'house';
       const roofRows = wallBelow ? 9 : 16;
@@ -140,6 +132,74 @@
       ctx.drawImage(block, col * piece + qx * q, row * piece + qy * q, q, q,
         x * TILE + qx * dq, y * TILE + qy * dq, dq, dq);
     }
+  }
+
+  // ---------- house from barn pieces ----------
+  function houseArt() {
+    const A = window.ART;
+    if (!A || !A.get || !A.get('house/roof')) return null;
+    const c = A.houseColor ? A.houseColor() : 'red';
+    const pick = k => A.get(`house/${k}/${c}`) || A.get(`house/${k}/red`);
+    const wall = pick('wall');
+    return wall ? { roof: A.get('house/roof'), wall, pillar: pick('pillar'), door: pick('door'), k: A.plantScale() } : null;
+  }
+
+  // Each column of house tiles: metal roof down to the front wall, then a
+  // slice of the repeating wall (eave, boards, windows, foundation). Slices
+  // are offset by world x so neighboring columns join into one wall. Corner
+  // posts cap each wall run; a door sits wherever a path meets the house.
+  function drawHouses(ctx) {
+    const art = houseArt();
+    if (!art) return false;
+    const { roof, wall, pillar, door, k } = art;
+    const W = window.YARD.W, H = window.YARD.H;
+    const wallH = wall.height * k;
+    const isHouse = (x, y) => at(x, y) === 'house';
+    const outline = '#2b2433';
+    for (let x = 0; x < W; x++) {
+      for (let y = 0; y < H; y++) {
+        if (!isHouse(x, y) || isHouse(x, y - 1)) continue;
+        let y1 = y;
+        while (isHouse(x, y1 + 1)) y1++;
+        const top = y * TILE, bot = (y1 + 1) * TILE, left = x * TILE;
+        const wh = Math.min(wallH, bot - top - 8);
+        const wallTop = bot - wh;
+        // roof
+        ctx.save();
+        ctx.beginPath(); ctx.rect(left, top, TILE, wallTop - top); ctx.clip();
+        for (let ty = y; ty * TILE < wallTop; ty++) ctx.drawImage(roof, left, ty * TILE, TILE, TILE);
+        ctx.restore();
+        // wall slice: native columns [sx, sx+16) of the repeating wall, wrapping
+        const native = TILE / k;
+        let sx = (x * native) % wall.width, dx = 0;
+        const sy = wall.height - wh / k;
+        while (dx < native) {
+          const w = Math.min(native - dx, wall.width - sx);
+          ctx.drawImage(wall, sx, sy, w, wh / k, left + dx * k, wallTop, w * k, wh);
+          dx += w; sx = 0;
+        }
+        // outline where the house meets yard
+        ctx.fillStyle = outline;
+        if (!isHouse(x, y - 1)) ctx.fillRect(left, top, TILE, 2);
+        for (let ty = y; ty <= y1; ty++) {
+          if (!isHouse(x - 1, ty)) ctx.fillRect(left, ty * TILE, 2, TILE);
+          if (!isHouse(x + 1, ty)) ctx.fillRect(left + TILE - 2, ty * TILE, 2, TILE);
+        }
+        // corner posts at the ends of this wall run
+        if (pillar) {
+          const ph = Math.min(pillar.height * k, wh), py = bot - ph, psy = pillar.height - ph / k;
+          if (!isHouse(x - 1, y1)) ctx.drawImage(pillar, 0, psy, pillar.width, ph / k, left, py, pillar.width * k, ph);
+          if (!isHouse(x + 1, y1)) ctx.drawImage(pillar, 0, psy, pillar.width, ph / k, left + TILE - pillar.width * k, py, pillar.width * k, ph);
+        }
+        // door where the front walk arrives
+        if (door && at(x, y1 + 1) === 'path') {
+          const dh = Math.min(door.height * k, wh), dw = door.width * k;
+          ctx.drawImage(door, 0, door.height - dh / k, door.width, dh / k, left + TILE / 2 - dw / 2, bot - dh, dw, dh);
+        }
+        y = y1;
+      }
+    }
+    return true;
   }
 
   // picket fence overlay for the lot border (drawn on grass border tiles)
@@ -347,6 +407,7 @@
 
   window.SPRITES = {
     TILE,
+    drawHouses,
     drawTerrain(ctx, type, x, y) {
       const A = window.ART;
       const auto = A && A.autotile && A.autotile(type);

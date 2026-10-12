@@ -15,8 +15,10 @@ python3 tools/slice_limezu.py --sheets /path/to/sheets --out assets/art
   pack art use a pack plant tinted to the species' bloom color from `js/plants.js`.
 - Only the atlas is committed. LimeZu's license allows editing and commercial use
   with credit, not redistributing the pack.
-- Missing: the house. The buildings sheet we have was resized and is blurry; drop
-  in the original 16x16 PNG and map the farmhouse in the slicer.
+- The house is built from the big barn (`barn_<color>.png`, 4 colors): metal
+  roof tiles, a repeating wall with windows, corner posts, and a door wherever a
+  path meets the house (`drawHouses` in `js/sprites.js`), so any painted
+  footprint works.
 
 
 ## Sprout Lands (the chosen direction)

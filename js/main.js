@@ -15,7 +15,7 @@
 
   // ---------- preferences ----------
   const PREF_KEY = 'gardenstar-ui-v1';
-  let prefs = { welcomed: false, shade: false, tipsSeen: false };
+  let prefs = { welcomed: false, shade: false, tipsSeen: false, houseColor: 'red' };
   try { Object.assign(prefs, JSON.parse(localStorage.getItem(PREF_KEY) || '{}')); } catch (e) { /* private mode */ }
   function savePrefs() { try { localStorage.setItem(PREF_KEY, JSON.stringify(prefs)); } catch (e) { /* ignore */ } }
 
@@ -79,6 +79,7 @@
 
   function renderWorld() {
     for (let y = 0; y < Y.H; y++) for (let x = 0; x < Y.W; x++) S.drawTerrain(wctx, Y.terrainAt(x, y), x, y);
+    S.drawHouses(wctx);
     for (let x = 0; x < Y.W; x++) {
       if (Y.terrainAt(x, 0) === 'grass') S.drawFence(wctx, x, 0, false);
       if (Y.terrainAt(x, Y.H - 1) === 'grass') S.drawFence(wctx, x, Y.H - 1, false);
@@ -828,14 +829,20 @@
   function gardenMore() {
     const credit = window.ART.creditLine();
     return {
-      html: `<div class="card"><h3>Share</h3><p class="small">Save a picture of your pixel yard.</p><div class="row" style="margin-top:8px"><button class="btn" id="m-share">Save yard picture</button></div></div>
+      html: `${window.ART.houseColors().length ? `<div class="card"><h3>House color</h3><div class="chips" style="margin-top:6px">${window.ART.houseColors().map(c => `<button data-house="${c}" class="${window.ART.houseColor() === c ? 'active' : ''}">${cap(c)}</button>`).join('')}</div></div>` : ''}
+        <div class="card"><h3>Share</h3><p class="small">Save a picture of your pixel yard.</p><div class="row" style="margin-top:8px"><button class="btn" id="m-share">Save yard picture</button></div></div>
         <div class="card"><h3>Describe your yard to Claude</h3><p class="small">Chat about your real yard and Claude builds the map for you.</p><div class="row" style="margin-top:8px"><button class="btn alt" id="m-interview">Start interview</button></div></div>
         <div class="card"><h3>Backup</h3><p class="small">Copy your garden to keep it safe or move it to another device.</p>
           <div class="row" style="margin-top:8px"><button class="btn alt" id="m-export">Copy backup</button><button class="btn alt" id="m-import">Restore</button></div></div>
         <div class="card"><h3>Start over</h3><p class="small">Pick a new starting yard. This clears your map, XP and badges.</p><div class="row" style="margin-top:8px"><button class="btn danger" id="m-reset">Start over</button></div></div>
         ${MON.supportUrl ? `<a class="btn gold block" target="_blank" rel="noopener" href="${esc(MON.supportUrl)}">Support GardenStar</a>` : ''}
         <p class="small muted">GardenStar test flight. Prototype garden: ${esc(window.SITE.address)} (USDA zone ${window.SITE.usdaZone}). Plant data: Gulf Coast natives and the Harris County planting calendar. Weather: Open-Meteo.${credit ? ' ' + esc(credit) + '.' : ''} Not affiliated with FarmVille or Zynga.</p>`,
-      bind() {
+      bind(body) {
+        body.querySelectorAll('[data-house]').forEach(b => b.onclick = () => {
+          prefs.houseColor = b.dataset.house; savePrefs();
+          window.ART.setHouseColor(prefs.houseColor);
+          requestDraw(true); renderSheet(false);
+        });
         $('m-share').onclick = shareYard;
         $('m-interview').onclick = () => { closeSheet(); showWelcome('interview'); };
         $('m-export').onclick = exportGarden;
@@ -1009,7 +1016,11 @@
   }
   refreshHUD();
 
-  window.ART.init(() => { Object.keys(swatchCache).forEach(k => delete swatchCache[k]); requestDraw(true); refreshSheet(); renderModeChip(); });
+  window.ART.init(() => {
+    window.ART.setHouseColor(prefs.houseColor);
+    Object.keys(swatchCache).forEach(k => delete swatchCache[k]);
+    requestDraw(true); refreshSheet(); renderModeChip();
+  });
 
   window.WEATHER.fetchWeather().then(w => {
     ui.weather = w;

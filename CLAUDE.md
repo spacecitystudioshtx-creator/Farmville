@@ -39,7 +39,8 @@ action also takes back its XP.
   in `assets/art/manifest.json` and shows in the app). Rebuild the atlas with
   `tools/slice_limezu.py`; commit only the atlas, never the pack's sheets.
   Natives without pack art are pack plants tinted to their real bloom color.
-  The house is still procedural until a crisp buildings sheet arrives.
+  The house is assembled from LimeZu barn pieces (roof, repeating wall, corner
+  posts, a door where a path meets it) in four colors, chosen in Garden > More.
   The free Sprout Lands pack is non-commercial: don't commit its assets.
 
 ## Test

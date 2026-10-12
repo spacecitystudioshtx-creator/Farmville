@@ -5,6 +5,8 @@ Usage:
   python3 tools/slice_limezu.py --sheets DIR --out assets/art
 
 DIR must hold (rename the pack files to these):
+  barn_red.png, barn_teal.png, barn_yellow.png, barn_gray.png
+               - the big barn in each color (256x256, or a 3x export: 768x768)
   terrain.png  - ground autotiles (grass, sand, tilled soil, dirt, water)
   fences.png   - fences and garden beds
   crops.png    - crops, one 32px-tall row per crop, a column per growth stage
@@ -99,6 +101,12 @@ PLANTS = {
 # ground: 48x48 islands (3x3 autotile blocks) in terrain.png
 AUTOTILES = {'soil': (0, 128), 'path': (0, 64), 'driveway': (0, 0)}
 GRASS_TILE = (48, 32)
+# barn pieces the house is assembled from (x0, y0, x1, y1 in the 256px barn)
+HOUSE_COLORS = ('red', 'teal', 'yellow', 'gray')
+HOUSE_ROOF = (192, 96, 208, 112)    # seamless 16x16 corrugated metal
+HOUSE_WALL = (176, 183, 230, 239)   # eave, boards, two windows, foundation; repeats sideways
+HOUSE_PILLAR = (230, 186, 237, 239)  # white corner post for wall ends
+HOUSE_DOOR = (96, 207, 121, 256)    # X-braced barn door with its header
 FENCE_H = (304, 96)
 FENCE_V = (288, 112)
 
@@ -191,6 +199,16 @@ def main():
 
     frames = {}  # key -> Image
 
+    for color in HOUSE_COLORS:
+        barn = load(f'barn_{color}.png')
+        if barn.width == 768:  # 3x nearest-neighbor export of the 256px original
+            barn = barn.resize((256, 256), Image.NEAREST)
+        if color == 'red':
+            frames['house/roof'] = barn.crop(HOUSE_ROOF)
+        frames[f'house/wall/{color}'] = barn.crop(HOUSE_WALL)
+        frames[f'house/pillar/{color}'] = barn.crop(HOUSE_PILLAR)
+        frames[f'house/door/{color}'] = barn.crop(HOUSE_DOOR)
+
     gx, gy = GRASS_TILE
     for i, t in enumerate(grass_variants(terrain.crop((gx, gy, gx + 16, gy + 16)))):
         frames['tiles/grass' + ('' if i == 0 else '_' + str(i))] = t
@@ -235,6 +253,7 @@ def main():
         'frames': {k: list(v) for k, v in sorted(pos.items())},
         'autotiles': sorted(AUTOTILES),
         'tileVariants': {'grass': ['grass', 'grass_1', 'grass_2']},
+        'houseColors': list(HOUSE_COLORS),
     }
     with open(os.path.join(a.out, 'manifest.json'), 'w') as f:
         json.dump(manifest, f, indent=1)
